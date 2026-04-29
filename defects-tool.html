@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=2.0">
+    <title>驗樓記錄工具 - Clerk of Works Services Limited</title>
+    <style>
+        :root {
+            --bg: #f5f3f0;
+            --card-bg: #ffffff;
+            --primary: #2c3e50;
+            --accent: #8b6f4e;
+            --accent-light: #d4c4b0;
+            --border: #e0d9d0;
+            --text: #2c2c2c;
+            --text-secondary: #6b5e52;
+            --danger: #b85450;
+            --success: #5a7d5a;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.10);
+            --radius-sm: 6px;
+            --radius: 10px;
+            --radius-lg: 14px;
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-stack: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', 'Microsoft JhengHei', 'PingFang HK', sans-serif;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #1e1c1a;
+                --card-bg: #282624;
+                --primary: #e0d8cf;
+                --accent: #c4a882;
+                --accent-light: #4a3f33;
+                --border: #3d3832;
+                --text: #e8e4df;
+                --text-secondary: #b5a99a;
+                --shadow-sm: 0 1px 3px rgba(0,0,0,0.25);
+                --shadow: 0 2px 8px rgba(0,0,0,0.30);
+                --shadow-lg: 0 8px 30px rgba(0,0,0,0.40);
+            }
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: var(--font-stack);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+            padding-bottom: 30px;
+        }
+        .app-header {
+            background: var(--card-bg);
+            border-bottom: 2px solid var(--accent-light);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            box-shadow: var(--shadow-sm);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .app-header .logo-area { display: flex; align-items: center; gap: 12px; }
+        .app-header .logo-icon {
+            width: 42px; height: 42px;
+            background: var(--accent);
+            border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-weight: 700; font-size: 18px;
+        }
+        .app-header h1 { font-size: 1.15rem; font-weight: 700; color: var(--primary); letter-spacing: 0.02em; white-space: nowrap; }
+        .app-header .subtitle { font-size: 0.78rem; color: var(--text-secondary); font-weight: 400; white-space: nowrap; }
+        .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 10px 18px; border-radius: var(--radius-sm); border: 1.5px solid transparent;
+            cursor: pointer; font-size: 0.9rem; font-weight: 600; font-family: var(--font-stack);
+            transition: var(--transition); white-space: nowrap; letter-spacing: 0.01em;
+            user-select: none; -webkit-user-select: none;
+            min-height: 44px; min-width: 44px; justify-content: center;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .btn-primary:hover { background: #7a5f3f; border-color: #7a5f3f; }
+        .btn-outline { background: transparent; color: var(--accent); border-color: var(--accent); }
+        .btn-outline:hover { background: var(--accent-light); }
+        .btn-ghost { background: transparent; color: var(--text-secondary); border-color: var(--border); }
+        .btn-ghost:hover { background: var(--bg); border-color: var(--text-secondary); }
+        .btn-danger { background: transparent; color: var(--danger); border-color: var(--danger); }
+        .btn-danger:hover { background: #fdf2f2; }
+        .btn-sm { padding: 6px 12px; font-size: 0.78rem; border-radius: 4px; min-height: 36px; }
+        .btn-icon { width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 1.1rem; }
+
+        .main-container {
+            max-width: 1300px; margin: 0 auto; padding: 16px 20px 40px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;
+        }
+        @media (max-width: 900px) {
+            .main-container { grid-template-columns: 1fr; padding: 10px 12px 30px; gap: 14px; }
+            .app-header h1 { font-size: 1rem; }
+            .app-header .subtitle { font-size: 0.7rem; }
+            .btn { padding: 8px 14px; font-size: 0.82rem; }
+        }
+
+        .card {
+            background: var(--card-bg); border-radius: var(--radius-lg); padding: 18px 20px;
+            box-shadow: var(--shadow); border: 1px solid var(--border);
+        }
+        .card-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 14px; flex-wrap: wrap; gap: 8px;
+        }
+        .card-header h2 { font-size: 1.05rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+        .card-header h2 .badge {
+            font-size: 0.72rem; background: var(--accent-light); color: var(--accent);
+            padding: 3px 10px; border-radius: 20px; font-weight: 600;
+        }
+
+        label { display: block; font-size: 0.84rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; }
+        input[type="text"], input[type="date"], select, textarea {
+            width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+            font-size: 0.9rem; font-family: var(--font-stack); background: var(--card-bg); color: var(--text);
+            transition: var(--transition); -webkit-appearance: none; appearance: none;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(139,111,78,0.1);
+        }
+        textarea { resize: vertical; min-height: 68px; }
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Cpath d='M6 8L1 3h10z' fill='%236b5e52'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; cursor: pointer;
+        }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (max-width: 500px) { .form-row { grid-template-columns: 1fr; } }
+
+        .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+        .chip {
+            padding: 8px 16px; border-radius: 20px; border: 1.5px solid var(--border);
+            cursor: pointer; font-size: 0.84rem; font-weight: 500; transition: var(--transition);
+            user-select: none; -webkit-user-select: none; background: var(--card-bg); color: var(--text);
+            white-space: nowrap; min-height: 40px; display: inline-flex; align-items: center;
+        }
+        .chip:hover { border-color: var(--accent); background: var(--accent-light); }
+        .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
+        .chip.room-chip { font-weight: 600; padding: 8px 18px; font-size: 0.88rem; }
+        .chip .delete-room {
+            margin-left: 8px; font-weight: bold; opacity: 0.7; font-size: 0.9rem;
+            cursor: pointer; padding: 2px 4px; border-radius: 50%;
+        }
+        .chip .delete-room:hover { opacity: 1; background: rgba(0,0,0,0.1); }
+
+        .template-list { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; padding-right: 4px; }
+        .template-item {
+            padding: 10px 14px; border-radius: var(--radius-sm); border: 1.5px solid var(--border);
+            cursor: pointer; font-size: 0.84rem; transition: var(--transition); background: #fafaf8;
+            color: var(--text); display: flex; align-items: flex-start; gap: 8px;
+        }
+        .template-item:hover { border-color: var(--accent); background: #fdfaf5; box-shadow: var(--shadow-sm); }
+        .template-item.selected { border-color: var(--accent); background: #fef9f0; box-shadow: inset 0 0 0 2px var(--accent-light); }
+        .template-item .tmpl-num { font-weight: 700; color: var(--accent); flex-shrink: 0; min-width: 22px; }
+        .template-item .tmpl-text { flex: 1; }
+        .template-item .tmpl-check { color: var(--success); font-weight: 700; flex-shrink: 0; display: none; }
+        .template-item.selected .tmpl-check { display: inline; }
+
+        .report-table-wrap {
+            overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 8px;
+            border-radius: var(--radius-sm); border: 1px solid var(--border);
+        }
+        table.report-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 600px; }
+        table.report-table th, table.report-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+        table.report-table th { background: #faf8f5; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); position: sticky; top: 0; }
+        table.report-table tr:hover td { background: #fdfcf9; }
+        .col-item { width: 70px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+        .col-position { width: 130px; font-weight: 600; }
+        .col-desc { min-width: 200px; }
+        .col-remarks { width: 110px; color: var(--text-secondary); font-style: italic; }
+        .col-actions { width: 40px; text-align: center; }
+
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-secondary); font-size: 0.9rem; }
+        .empty-state .icon { font-size: 3rem; display: block; margin-bottom: 10px; opacity: 0.5; }
+
+        .toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: var(--primary); color: #fff; padding: 11px 22px; border-radius: 30px;
+            font-weight: 600; font-size: 0.85rem; z-index: 999; opacity: 0; pointer-events: none;
+            transition: opacity 0.3s, transform 0.3s; box-shadow: var(--shadow-lg);
+        }
+        .toast.show { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(-6px); }
+
+        /* 簽名區塊（僅列印時顯示） */
+        .signature-area { display: none; }
+        @media print {
+            .signature-area {
+                display: flex !important;
+                justify-content: space-between;
+                margin-top: 30px;
+                padding-top: 20px;
+            }
+            .signature-area .sig-block {
+                width: 45%;
+            }
+            .signature-area .sig-line {
+                border-bottom: 1px solid #000;
+                margin: 20px 0 8px;
+                height: 1px;
+            }
+            .signature-area .sig-label {
+                font-weight: 600;
+                font-size: 11px;
+                color: #000;
+            }
+        }
+
+        @media print {
+            body { background: #fff; font-size: 12px; color: #000; }
+            .app-header, .main-container .card:first-child, .btn, .toast, .no-print,
+            .col-actions, .chip-group, .template-list, .form-row, .collapsible-toggle,
+            .header-actions, .card-header .badge { display: none !important; }
+            .main-container { display: block !important; max-width: 100%; padding: 0; gap: 0; }
+            .card { box-shadow: none; border: none; padding: 0; margin-bottom: 20px; break-inside: avoid; }
+            table.report-table { font-size: 11px; min-width: auto; width: 100%; border: 1px solid #000; }
+            table.report-table th { background: #eee; color: #000; border-bottom: 2px solid #000; }
+            table.report-table th, table.report-table td { padding: 6px 8px; border: 1px solid #ccc; }
+            .report-table-wrap { border: none; overflow-x: visible; }
+            .print-only { display: block !important; }
+            @page { margin: 15mm; size: A4; }
+        }
+        .print-only { display: none; }
+
+        @keyframes highlightRow { 0% { background: #fef9e7; } 100% { background: transparent; } }
+        .highlight-flash { animation: highlightRow 1.5s ease-out; }
+    </style>
+</head>
+<body>
+
+<header class="app-header">
+    <div class="logo-area">
+        <div class="logo-icon">CW</div>
+        <div><h1>Clerk of Works Services Limited</h1><div class="subtitle">工程監督師 · 驗樓記錄工具</div></div>
+    </div>
+    <div class="header-actions no-print">
+        <button class="btn btn-outline btn-sm" onclick="saveToLocal()">💾 儲存進度</button>
+        <button class="btn btn-outline btn-sm" onclick="loadFromLocal()">📂 載入進度</button>
+        <button class="btn btn-primary btn-sm" onclick="printReport()">🖨️ 列印/匯出PDF</button>
+    </div>
+</header>
+
+<div class="main-container">
+    <!-- 左側輸入面板 -->
+    <div class="card no-print" id="inputPanel">
+        <div style="margin-bottom:14px;">
+            <span class="collapsible-toggle open" onclick="toggleCollapse(this, 'projInfo')"><span class="arrow">▶</span> 項目資料</span>
+            <div class="collapsible-content open" id="projInfo">
+                <div style="margin-top:10px;">
+                    <div class="form-row">
+                        <div><label>地址 Address</label><input type="text" id="addrInput" value="黄金海灣意嵐3座5樓G室"></div>
+                        <div><label>客戶 Client</label><input type="text" id="clientInput" value="Ms. Isabel Tse"></div>
+                    </div>
+                    <div class="form-row" style="margin-top:8px;">
+                        <div><label>驗樓日期 Date</label><input type="date" id="dateInput"></div>
+                        <div><label>天氣 Weather</label><select id="weatherInput"><option>晴</option><option>陰</option><option>雨</option><option>多雲</option></select></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr style="border:none;border-top:1px solid var(--border);margin:10px 0;">
+
+        <label>📍 步驟一：選擇房間</label>
+        <div class="chip-group" id="roomChips" style="margin-bottom:12px;"></div>
+
+        <label>📂 步驟二：選擇類別</label>
+        <div class="chip-group" id="catChips" style="margin-bottom:12px;"></div>
+
+        <label>📝 步驟三：選擇問題描述模板</label>
+        <div class="template-list" id="templateList" style="margin-bottom:10px;"></div>
+
+        <div style="margin-bottom:8px;"><label>✏️ 自訂描述</label><textarea id="customDesc" placeholder="例如：部份牆身有裂紋，要修補及重髹"></textarea></div>
+        <div style="margin-bottom:8px;"><label>🗒️ 備註 Remarks</label><input type="text" id="remarksInput" placeholder="例：部份窗為玻璃幕牆設計，高位無法檢查"></div>
+        <button class="btn btn-primary" onclick="addDefect()" style="width:100%;">➕ 添加至報告</button>
+        <div style="text-align:center;margin-top:6px;font-size:0.75rem;color:var(--text-secondary);">快捷鍵：Ctrl+Enter</div>
+    </div>
+
+    <!-- 右側報告面板 -->
+    <div class="card" id="reportPanel">
+        <div class="card-header">
+            <h2>📋 驗樓缺陷報告 <span class="badge" id="defectCount">0 項</span></h2>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <button class="btn btn-ghost btn-sm no-print" onclick="refreshReport()">🔄 重新整理編號</button>
+                <button class="btn btn-ghost btn-sm no-print" onclick="clearAllDefects()">🗑️ 清空</button>
+            </div>
+        </div>
+
+        <div class="print-only" style="text-align:center;margin-bottom:16px;">
+            <h2 style="margin:0;font-size:16px;">Clerk of Works Services Limited</h2>
+            <p style="margin:2px 0;font-weight:700;">工程監督師 · Defects List</p>
+            <p style="margin:2px 0;font-size:12px;">
+                Address: <span id="printAddr"></span> &nbsp;|&nbsp;
+                Client: <span id="printClient"></span> &nbsp;|&nbsp;
+                Date: <span id="printDate"></span> &nbsp;|&nbsp;
+                Weather: <span id="printWeather"></span>
+            </p>
+        </div>
+
+        <div class="report-table-wrap">
+            <table class="report-table" id="reportTable">
+                <thead><tr><th class="col-item">Item</th><th class="col-position">Position</th><th class="col-desc">Description of work</th><th class="col-remarks">Remarks</th><th class="col-actions no-print"></th></tr></thead>
+                <tbody id="reportBody"></tbody>
+            </table>
+        </div>
+
+        <!-- 修改後的簽名區塊 -->
+        <div class="signature-area">
+            <div class="sig-block">
+                <div class="sig-line"></div>
+                <div class="sig-label">Checked by: ____________________________</div>
+            </div>
+            <div class="sig-block">
+                <div class="sig-line"></div>
+                <div class="sig-label">Endorsed by: ____________________________</div>
+            </div>
+        </div>
+
+        <div class="no-print" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-ghost btn-sm" onclick="copyReportText()">📋 複製純文字報告</button>
+            <button class="btn btn-ghost btn-sm" onclick="exportJSON()">📥 匯出JSON備份</button>
+            <label class="btn btn-ghost btn-sm" style="cursor:pointer;">📤 匯入JSON備份<input type="file" accept=".json" onchange="importJSON(this)" style="display:none;"></label>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    (function() {
+        // （此處為完整的 JavaScript 邏輯，與上一個版本相同，僅保留以確保功能完整）
+        const DEFAULT_ROOMS = [
+            { id: 1, name: '客廳連廚房', categories: ['批盪','油漆','腳線','鋪磚','門','潔具及來去水','厨櫃','石材','玻璃趟門','窗','電及家電','備注'] },
+            { id: 2, name: '廳露台', categories: ['鋪磚','欄杆','電及家電','玻璃趟門','窗'] },
+            { id: 3, name: '廳邊客房', categories: ['批盪','油漆','門','腳線及地磚','窗','石材','電及家電'] },
+            { id: 4, name: '浴室', categories: ['鋪磚','門','窗','石材','潔具及來去水','電及家電','批盪','油漆'] },
+            { id: 5, name: '主人房', categories: ['批盪','油漆','門','腳線及地磚','窗','石材','電及家電'] },
+            { id: 6, name: '廳邊雜物房', categories: ['批盪','油漆','門','腳線及地磚','電及家電'] }
+        ];
+        const GENERIC_CATEGORIES = ['批盪','油漆','腳線及地磚','鋪磚','門','窗','石材','電及家電','潔具及來去水','厨櫃','玻璃趟門','欄杆','備注'];
+
+        const categoryTemplates = {
+            '批盪': ['暫沒有必修項目','部份牆身批盪不平滑，要重做','部份天花批盪有裂紋，要修補'],
+            '油漆': ['部份牆身不平滑及有污漬，要扇灰及重髹','部份天花不平滑及有污漬，要扇灰及重髹','牆身及天花不平滑及有污漬，要扇灰及重髹'],
+            '腳線': ['部份腳線邊掃口有孔，要填補','部份腳線崩、花及污，要修補及清潔'],
+            '腳線及地磚': ['部份腳線邊掃口有孔，要填補','部份腳線崩、花及污，要修補及清潔','部份鋪磚不平，要修理','部份地磚污，要清潔'],
+            '鋪磚': ['部份地磚掃口有罅，要填補','部份地磚掃口污，要重做','部份地磚有空鼓，要拆除及重做','冷氣底右邊磚大崩，要更換'],
+            '門': ['門有虛位，要調校或加裝膠笠','門眼斜，要重裝','門身污，要清潔','門底爛，要修補','門柄鬆，要加固','鎖舌撞鎖片，要調校'],
+            '潔具及來去水': ['鉚盤花，建議重磨或更換','來去水不暢順，要疏通'],
+            '厨櫃': ['部份櫃門斜，要調校','焗爐左邊櫃桶螺絲斜，要調校','部份櫃板崩、花及污，要修補及清潔'],
+            '石材': ['暫沒有必修項目','窗底石裂，建議更換或填補','部份石材有花痕，建議重磨'],
+            '玻璃趟門': ['玻璃趟門框膠不平滑，要重做','外框有罅，要填補','玻璃趟門底掃口不平滑，要重做','玻璃污，要清潔'],
+            '窗': ['暫沒有必修項目','部份窗印花，要修理','部份窗邊唧膠不平滑，要重做','窗較欠螺絲，要補裝','玻璃污，要清潔'],
+            '電及家電': ['暫沒有必修項目','抽油煙機推拉有刮聲，要清理及加潤滑','電掣及寬頻制高低不平，要修理','電視制斜，要修補'],
+            '欄杆': ['玻璃花，建議重磨或更換','玻璃污，要清潔','冷氣欄河鎖口不能運作，要更換'],
+            '備注': ['部份窗為玻璃幕牆設計，部份高位無法檢查','冷氣及其他電器運作不再檢查範圍內'],
+        };
+
+        let rooms = JSON.parse(JSON.stringify(DEFAULT_ROOMS));
+        let defects = [];
+        let selectedRoomId = null;
+        let selectedCategoryName = null;
+        let selectedTemplates = [];
+
+        const $roomChips = document.getElementById('roomChips');
+        const $catChips = document.getElementById('catChips');
+        const $templateList = document.getElementById('templateList');
+        const $customDesc = document.getElementById('customDesc');
+        const $remarksInput = document.getElementById('remarksInput');
+        const $reportBody = document.getElementById('reportBody');
+        const $defectCount = document.getElementById('defectCount');
+        const $toast = document.getElementById('toast');
+        const $addrInput = document.getElementById('addrInput');
+        const $clientInput = document.getElementById('clientInput');
+        const $dateInput = document.getElementById('dateInput');
+        const $weatherInput = document.getElementById('weatherInput');
+
+        function init() {
+            $dateInput.value = new Date().toISOString().split('T')[0];
+            const saved = localStorage.getItem('cw_defects_report_v3');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    if (data.rooms && data.defects) {
+                        rooms = data.rooms;
+                        defects = data.defects;
+                        if (data.addr) $addrInput.value = data.addr;
+                        if (data.client) $clientInput.value = data.client;
+                        if (data.date) $dateInput.value = data.date;
+                        if (data.weather) $weatherInput.value = data.weather;
+                    }
+                } catch (e) {}
+            }
+            renderAll();
+            document.addEventListener('keydown', e => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); addDefect(); }
+            });
+        }
+
+        function renderAll() { renderRoomChips(); renderCatChips(); renderTemplateList(); renderReportTable(); }
+
+        function renderRoomChips() {
+            let html = rooms.map(r => `
+                <span class="chip room-chip${selectedRoomId === r.id ? ' active' : ''}" onclick="selectRoom(${r.id})">
+                    ${escapeHtml(r.name)}
+                    <span class="delete-room" onclick="event.stopPropagation();deleteRoom(${r.id})">✕</span>
+                </span>`).join('');
+            html += `<span class="chip room-chip" style="border-style:dashed;" onclick="addCustomRoom()">＋ 自訂房間</span>`;
+            $roomChips.innerHTML = html;
+        }
+
+        window.selectRoom = function(id) {
+            selectedRoomId = id; selectedCategoryName = null; selectedTemplates = [];
+            $customDesc.value = ''; $remarksInput.value = '';
+            renderRoomChips(); renderCatChips(); renderTemplateList();
+        };
+
+        window.deleteRoom = function(roomId) {
+            const room = rooms.find(r => r.id === roomId);
+            if (!room) return;
+            const related = defects.filter(d => d.roomId === roomId);
+            if (!confirm(`刪除房間「${room.name}」將會同時刪除 ${related.length} 項缺陷記錄，確定？`)) return;
+            defects = defects.filter(d => d.roomId !== roomId);
+            rooms = rooms.filter(r => r.id !== roomId);
+            if (selectedRoomId === roomId) { selectedRoomId = null; selectedCategoryName = null; }
+            saveToLocal(); renderAll(); showToast('🗑️ 房間已刪除');
+        };
+
+        window.addCustomRoom = function() {
+            const name = prompt('請輸入自訂房間名稱：');
+            if (!name) return;
+            if (rooms.some(r => r.name === name.trim())) { showToast('⚠️ 房間名稱已存在'); return; }
+            rooms.push({ id: Date.now(), name: name.trim(), categories: [...GENERIC_CATEGORIES] });
+            saveToLocal(); renderRoomChips(); showToast('✅ 已新增');
+        };
+
+        function getCurrentCategories() {
+            if (!selectedRoomId) return [];
+            const room = rooms.find(r => r.id === selectedRoomId);
+            return room ? room.categories : [];
+        }
+
+        function renderCatChips() {
+            const cats = getCurrentCategories();
+            if (!cats.length) { $catChips.innerHTML = '<span style="color:var(--text-secondary);">請先選擇房間</span>'; return; }
+            $catChips.innerHTML = cats.map(c => `<span class="chip cat-chip${selectedCategoryName===c?' active':''}" onclick="selectCategory('${escapeHtmlAttr(c)}')">${escapeHtml(c)}</span>`).join('');
+        }
+
+        window.selectCategory = function(cat) {
+            selectedCategoryName = cat; selectedTemplates = [];
+            $customDesc.value = ''; $remarksInput.value = '';
+            renderCatChips(); renderTemplateList();
+        };
+
+        function getTemplates(cat) {
+            if (!cat) return [];
+            if (categoryTemplates[cat]) return categoryTemplates[cat];
+            for (const k of Object.keys(categoryTemplates)) if (cat.includes(k) || k.includes(cat)) return categoryTemplates[k];
+            return ['暫沒有必修項目','部份位置有污漬，要清潔'];
+        }
+
+        function renderTemplateList() {
+            if (!selectedCategoryName) { $templateList.innerHTML = '<div style="color:var(--text-secondary);padding:20px;text-align:center;">請先選擇房間和類別</div>'; return; }
+            const tmpls = getTemplates(selectedCategoryName);
+            $templateList.innerHTML = tmpls.map((t,i) => {
+                const sel = selectedTemplates.includes(t) ? ' selected' : '';
+                return `<div class="template-item${sel}" onclick="toggleTemplate('${escapeHtmlAttr(t)}', this)"><span class="tmpl-num">${i+1}.</span><span class="tmpl-text">${escapeHtml(t)}</span><span class="tmpl-check">✓</span></div>`;
+            }).join('');
+        }
+
+        window.toggleTemplate = function(t, el) {
+            const idx = selectedTemplates.indexOf(t);
+            if (idx >= 0) { selectedTemplates.splice(idx,1); el.classList.remove('selected'); }
+            else { selectedTemplates.push(t); el.classList.add('selected'); }
+            $customDesc.value = selectedTemplates.join('\n');
+        };
+
+        window.addDefect = function() {
+            if (!selectedRoomId) { showToast('⚠️ 請先選擇房間'); return; }
+            if (!selectedCategoryName) { showToast('⚠️ 請先選擇類別'); return; }
+            const rm = rooms.find(r => r.id === selectedRoomId);
+            const cv = $customDesc.value.trim();
+            let desc = '';
+            if (cv && cv !== selectedTemplates.join('\n')) desc = cv;
+            else if (selectedTemplates.length) desc = selectedTemplates.join('\n');
+            else if (cv) desc = cv;
+            else { showToast('⚠️ 請選擇模板或輸入描述'); return; }
+            defects.push({ id: Date.now(), roomId: rm.id, roomName: rm.name, categoryName: selectedCategoryName, description: desc, remarks: $remarksInput.value.trim() });
+            selectedTemplates = []; $customDesc.value = ''; $remarksInput.value = ''; selectedCategoryName = null;
+            renderCatChips(); renderTemplateList(); renderReportTable(); saveToLocal(); showToast('✅ 已添加');
+        };
+
+        function renderReportTable() {
+            if (!defects.length) { $reportBody.innerHTML = `<tr class="empty-state"><td colspan="5">📭 尚未添加任何缺陷項目</td></tr>`; $defectCount.textContent = '0 項'; return; }
+            $defectCount.textContent = defects.length + ' 項';
+            const roomOrder = {}; rooms.forEach((r,i) => roomOrder[r.id] = i);
+            const map = new Map();
+            defects.forEach(d => {
+                const k = d.roomId + '|||' + d.categoryName;
+                if (!map.has(k)) map.set(k, { roomId:d.roomId, roomName:d.roomName, categoryName:d.categoryName, descs:[], rems:[], ids:[] });
+                const g = map.get(k); g.descs.push(d.description); if (d.remarks) g.rems.push(d.remarks); g.ids.push(d.id);
+            });
+            const groups = Array.from(map.values()).sort((a,b) => (roomOrder[a.roomId] - roomOrder[b.roomId]) ||
+                ((rooms.find(r=>r.id===a.roomId)?.categories.indexOf(a.categoryName)||0) - (rooms.find(r=>r.id===b.roomId)?.categories.indexOf(b.categoryName)||0)));
+            let curRoom = null, rSeq = 0, cSeq = 0;
+            $reportBody.innerHTML = groups.map(g => {
+                if (g.roomId !== curRoom) { curRoom = g.roomId; rSeq++; cSeq = 0; }
+                cSeq++;
+                const item = rSeq + '.' + cSeq;
+                return `<tr data-ids="${g.ids.join(',')}" data-item="${item}">
+                    <td class="col-item">${item}</td>
+                    <td class="col-position">${escapeHtml(g.roomName)}</td>
+                    <td class="col-desc">${escapeHtml(g.descs.join('\n')).replace(/\n/g,'<br>')}</td>
+                    <td class="col-remarks">${escapeHtml(g.rems.join('; '))}</td>
+                    <td class="col-actions no-print"><button class="btn btn-danger btn-sm btn-icon" onclick="deleteDefectGroup('${g.ids.join(',')}')">✕</button></td>
+                </tr>`;
+            }).join('');
+        }
+
+        window.deleteDefectGroup = function(ids) {
+            const idArr = ids.split(',').map(Number);
+            if (!confirm(`確定刪除這 ${idArr.length} 項缺陷？`)) return;
+            defects = defects.filter(d => !idArr.includes(d.id));
+            renderReportTable(); saveToLocal(); showToast('🗑️ 已刪除');
+        };
+        window.refreshReport = function() { renderReportTable(); showToast('🔄 編號已重整'); };
+        window.clearAllDefects = function() {
+            if (!defects.length) return;
+            if (!confirm('確定清空全部記錄？')) return;
+            defects = []; renderReportTable(); saveToLocal(); showToast('🗑️ 已清空');
+        };
+
+        window.printReport = function() {
+            renderReportTable();
+            document.getElementById('printAddr').textContent = $addrInput.value || '—';
+            document.getElementById('printClient').textContent = $clientInput.value || '—';
+            document.getElementById('printDate').textContent = $dateInput.value || '—';
+            document.getElementById('printWeather').textContent = $weatherInput.value || '—';
+            window.print();
+        };
+
+        window.copyReportText = function() {
+            if (!defects.length) { showToast('⚠️ 無資料'); return; }
+            renderReportTable();
+            let text = 'Clerk of Works Services Limited\n工程監督師 · Defects List\n';
+            text += 'Address: ' + ($addrInput.value||'—') + '  Client: ' + ($clientInput.value||'—') + '\n';
+            document.querySelectorAll('#reportBody tr').forEach(row => {
+                text += `[${row.cells[0].textContent}] ${row.cells[1].textContent}\n${row.cells[2].innerHTML.replace(/<br>/g,'\n')}\n`;
+                if (row.cells[3].textContent) text += `  Remarks: ${row.cells[3].textContent}\n`;
+            });
+            navigator.clipboard.writeText(text).then(()=>showToast('📋 已複製')).catch(()=>showToast('⚠️ 複製失敗'));
+        };
+
+        window.exportJSON = function() {
+            const data = { addr:$addrInput.value, client:$clientInput.value, date:$dateInput.value, weather:$weatherInput.value, rooms, defects };
+            const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+            a.download = '驗樓報告_' + ($dateInput.value||'backup') + '.json'; a.click();
+            showToast('📥 已匯出');
+        };
+
+        window.importJSON = function(input) {
+            const file = input.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!data.rooms || !data.defects) throw new Error();
+                    if (!confirm(`匯入 ${data.defects.length} 項記錄，目前資料將被覆蓋？`)) return;
+                    rooms = data.rooms; defects = data.defects;
+                    if (data.addr) $addrInput.value = data.addr;
+                    if (data.client) $clientInput.value = data.client;
+                    if (data.date) $dateInput.value = data.date;
+                    if (data.weather) $weatherInput.value = data.weather;
+                    selectedRoomId = null; selectedCategoryName = null;
+                    renderAll(); saveToLocal(); showToast('📤 已匯入');
+                } catch { showToast('⚠️ 格式錯誤'); }
+            };
+            reader.readAsText(file); input.value = '';
+        };
+
+        function saveToLocal() {
+            const data = { addr:$addrInput.value, client:$clientInput.value, date:$dateInput.value, weather:$weatherInput.value, rooms, defects };
+            localStorage.setItem('cw_defects_report_v3', JSON.stringify(data));
+            // showToast('💾 已儲存'); // optional
+        }
+        window.saveToLocal = function() { saveToLocal(); showToast('💾 進度已儲存'); };
+
+        window.loadFromLocal = function() {
+            const raw = localStorage.getItem('cw_defects_report_v3');
+            if (!raw) { showToast('⚠️ 無儲存進度'); return; }
+            try {
+                const data = JSON.parse(raw);
+                if (data.rooms && data.defects) {
+                    if (!confirm('載入進度將覆蓋目前資料，確定？')) return;
+                    rooms = data.rooms; defects = data.defects;
+                    if (data.addr) $addrInput.value = data.addr;
+                    if (data.client) $clientInput.value = data.client;
+                    if (data.date) $dateInput.value = data.date;
+                    if (data.weather) $weatherInput.value = data.weather;
+                    selectedRoomId = null; selectedCategoryName = null;
+                    renderAll(); showToast('📂 已載入');
+                }
+            } catch { showToast('⚠️ 載入失敗'); }
+        };
+
+        function showToast(msg) { $toast.textContent = msg; $toast.classList.add('show'); clearTimeout($toast._t); $toast._t = setTimeout(() => $toast.classList.remove('show'), 2200); }
+        function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
+        function escapeHtmlAttr(s) { return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+        init();
+    })();
+</script>
+</body>
+</html>
