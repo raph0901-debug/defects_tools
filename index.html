@@ -364,4 +364,269 @@
         '厨櫃': ['部份櫃門斜，要調校','焗爐左邊櫃桶螺絲斜，要調校','部份櫃板崩、花及污，要修補及清潔'],
         '石材': ['暫沒有必修項目','窗底石裂，建議更換或填補','部份石材有花痕，建議重磨'],
         '玻璃趟門': ['玻璃趟門框膠不平滑，要重做','外框有罅，要填補','玻璃趟門底掃口不平滑，要重做','玻璃污，要清潔'],
-        '窗': ['暫沒有必修項目','部份窗印花，要修理','部份窗邊唧膠不平滑，要重做','窗較欠螺絲，要補裝','玻璃污，要清
+        '窗': ['暫沒有必修項目','部份窗印花，要修理','部份窗邊唧膠不平滑，要重做','窗較欠螺絲，要補裝','玻璃污，要清潔'],
+        '電及家電': ['暫沒有必修項目','抽油煙機推拉有刮聲，要清理及加潤滑','電掣及寬頻制高低不平，要修理','電視制斜，要修補'],
+        '欄杆': ['玻璃花，建議重磨或更換','玻璃污，要清潔','冷氣欄河鎖口不能運作，要更換'],
+        '備注': ['部份窗為玻璃幕牆設計，部份高位無法檢查','冷氣及其他電器運作不再檢查範圍內'],
+    };
+
+    let rooms = JSON.parse(JSON.stringify(DEFAULT_ROOMS));
+    let defects = [];
+    let selectedRoomId = null;
+    let selectedCategoryName = null;
+    let selectedTemplates = [];
+
+    const $roomChips = document.getElementById('roomChips');
+    const $catChips = document.getElementById('catChips');
+    const $templateList = document.getElementById('templateList');
+    const $customDesc = document.getElementById('customDesc');
+    const $remarksInput = document.getElementById('remarksInput');
+    const $reportBody = document.getElementById('reportBody');
+    const $defectCount = document.getElementById('defectCount');
+    const $toast = document.getElementById('toast');
+    const $addrInput = document.getElementById('addrInput');
+    const $clientInput = document.getElementById('clientInput');
+    const $dateInput = document.getElementById('dateInput');
+    const $weatherInput = document.getElementById('weatherInput');
+
+    function init() {
+        $dateInput.value = new Date().toISOString().split('T')[0];
+        const saved = localStorage.getItem('cw_defects_report_v4');
+        if (saved) {
+            try {
+                const data = JSON.parse(saved);
+                if (data.rooms && data.defects) {
+                    rooms = data.rooms;
+                    defects = data.defects;
+                    if (data.addr) $addrInput.value = data.addr;
+                    if (data.client) $clientInput.value = data.client;
+                    if (data.date) $dateInput.value = data.date;
+                    if (data.weather) $weatherInput.value = data.weather;
+                }
+            } catch (e) {}
+        }
+        renderAll();
+        document.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); addDefect(); }
+        });
+    }
+
+    function renderAll() { renderRoomChips(); renderCatChips(); renderTemplateList(); renderReportTable(); }
+
+    function renderRoomChips() {
+        let html = rooms.map(r => `
+            <span class="chip room-chip${selectedRoomId === r.id ? ' active' : ''}" onclick="selectRoom(${r.id})">
+                ${escapeHtml(r.name)}
+            </span>`).join('');
+        html += `<span class="chip room-chip" style="border-style:dashed;" onclick="addCustomRoom()">＋ 自訂房間</span>`;
+        $roomChips.innerHTML = html;
+    }
+
+    window.selectRoom = function(id) {
+        selectedRoomId = id; selectedCategoryName = null; selectedTemplates = [];
+        $customDesc.value = ''; $remarksInput.value = '';
+        renderRoomChips(); renderCatChips(); renderTemplateList();
+    };
+
+    window.addCustomRoom = function() {
+        const name = prompt('請輸入自訂房間名稱：');
+        if (!name) return;
+        if (rooms.some(r => r.name === name.trim())) { showToast('⚠️ 房間名稱已存在'); return; }
+        rooms.push({ id: Date.now(), name: name.trim(), categories: [...GENERIC_CATEGORIES] });
+        saveToLocal(); renderRoomChips(); showToast('✅ 已新增');
+    };
+
+    function getCurrentCategories() {
+        if (!selectedRoomId) return [];
+        const room = rooms.find(r => r.id === selectedRoomId);
+        return room ? room.categories : [];
+    }
+
+    function renderCatChips() {
+        const cats = getCurrentCategories();
+        if (!cats.length) { $catChips.innerHTML = '<span style="color:var(--text-secondary);">請先選擇房間</span>'; return; }
+        $catChips.innerHTML = cats.map(c => `<span class="chip cat-chip${selectedCategoryName===c?' active':''}" onclick="selectCategory('${escapeHtmlAttr(c)}')">${escapeHtml(c)}</span>`).join('');
+    }
+
+    window.selectCategory = function(cat) {
+        selectedCategoryName = cat; selectedTemplates = [];
+        $customDesc.value = ''; $remarksInput.value = '';
+        renderCatChips(); renderTemplateList();
+    };
+
+    function getTemplates(cat) {
+        if (!cat) return [];
+        if (categoryTemplates[cat]) return categoryTemplates[cat];
+        for (const k of Object.keys(categoryTemplates)) if (cat.includes(k) || k.includes(cat)) return categoryTemplates[k];
+        return ['暫沒有必修項目','部份位置有污漬，要清潔'];
+    }
+
+    function renderTemplateList() {
+        if (!selectedCategoryName) { $templateList.innerHTML = '<div style="padding:20px;text-align:center;">請先選擇房間和類別</div>'; return; }
+        const tmpls = getTemplates(selectedCategoryName);
+        $templateList.innerHTML = tmpls.map((t,i) => {
+            const sel = selectedTemplates.includes(t) ? ' selected' : '';
+            return `<div class="template-item${sel}" onclick="toggleTemplate('${escapeHtmlAttr(t)}', this)"><span class="tmpl-num">${i+1}.</span><span class="tmpl-text">${escapeHtml(t)}</span><span class="tmpl-check">✓</span></div>`;
+        }).join('');
+    }
+
+    window.toggleTemplate = function(t, el) {
+        const idx = selectedTemplates.indexOf(t);
+        if (idx >= 0) { selectedTemplates.splice(idx,1); el.classList.remove('selected'); }
+        else { selectedTemplates.push(t); el.classList.add('selected'); }
+        $customDesc.value = selectedTemplates.join('\n');
+    };
+
+    window.addDefect = function() {
+        if (!selectedRoomId) { showToast('⚠️ 請先選擇房間'); return; }
+        if (!selectedCategoryName) { showToast('⚠️ 請先選擇類別'); return; }
+        const rm = rooms.find(r => r.id === selectedRoomId);
+        const cv = $customDesc.value.trim();
+        let desc = '';
+        if (cv && cv !== selectedTemplates.join('\n')) desc = cv;
+        else if (selectedTemplates.length) desc = selectedTemplates.join('\n');
+        else if (cv) desc = cv;
+        else { showToast('⚠️ 請選擇模板或輸入描述'); return; }
+        defects.push({
+            id: Date.now(),
+            roomId: rm.id,
+            roomName: rm.name,
+            categoryName: selectedCategoryName,
+            description: desc,
+            remarks: $remarksInput.value.trim()
+        });
+        selectedTemplates = []; $customDesc.value = ''; $remarksInput.value = ''; selectedCategoryName = null;
+        renderCatChips(); renderTemplateList(); renderReportTable(); saveToLocal(); showToast('✅ 已添加');
+    };
+
+    function renderReportTable() {
+        if (!defects.length) {
+            $reportBody.innerHTML = `<tr class="empty-state"><td colspan="6">📭 尚未添加任何缺陷項目</td></tr>`;
+            $defectCount.textContent = '0 項';
+            return;
+        }
+        $defectCount.textContent = defects.length + ' 項';
+        const roomOrder = {}; rooms.forEach((r,i) => roomOrder[r.id] = i);
+        const map = new Map();
+        defects.forEach(d => {
+            const k = d.roomId + '|||' + d.categoryName;
+            if (!map.has(k)) map.set(k, { roomId:d.roomId, roomName:d.roomName, categoryName:d.categoryName, descs:[], rems:[], ids:[] });
+            const g = map.get(k); g.descs.push(d.description); if (d.remarks) g.rems.push(d.remarks); g.ids.push(d.id);
+        });
+        const groups = Array.from(map.values()).sort((a,b) =>
+            (roomOrder[a.roomId] - roomOrder[b.roomId]) ||
+            ((rooms.find(r=>r.id===a.roomId)?.categories.indexOf(a.categoryName)||0) -
+             (rooms.find(r=>r.id===b.roomId)?.categories.indexOf(b.categoryName)||0))
+        );
+        let curRoom = null, rSeq = 0, cSeq = 0;
+        $reportBody.innerHTML = groups.map(g => {
+            if (g.roomId !== curRoom) { curRoom = g.roomId; rSeq++; cSeq = 0; }
+            cSeq++;
+            const item = rSeq + '.' + cSeq;
+            return `<tr data-ids="${g.ids.join(',')}" data-item="${item}">
+                <td class="col-item">${item}</td>
+                <td class="col-position">${escapeHtml(g.roomName)}</td>
+                <td class="col-category">${escapeHtml(g.categoryName)}</td>
+                <td class="col-desc">${escapeHtml(g.descs.join('\n')).replace(/\n/g,'<br>')}</td>
+                <td class="col-remarks">${escapeHtml(g.rems.join('; '))}</td>
+                <td class="col-actions no-print"><button class="btn btn-danger btn-sm btn-icon" onclick="deleteDefectGroup('${g.ids.join(',')}')">✕</button></td>
+            </tr>`;
+        }).join('');
+    }
+
+    window.deleteDefectGroup = function(ids) {
+        const idArr = ids.split(',').map(Number);
+        if (!confirm(`確定刪除這 ${idArr.length} 項缺陷？`)) return;
+        defects = defects.filter(d => !idArr.includes(d.id));
+        renderReportTable(); saveToLocal(); showToast('🗑️ 已刪除');
+    };
+    window.refreshReport = function() { renderReportTable(); showToast('🔄 編號已重整'); };
+    window.clearAllDefects = function() {
+        if (!defects.length) return;
+        if (!confirm('確定清空全部記錄？')) return;
+        defects = []; renderReportTable(); saveToLocal(); showToast('🗑️ 已清空');
+    };
+
+    window.printReport = function() {
+        renderReportTable();
+        document.getElementById('printAddr').textContent = $addrInput.value || '—';
+        document.getElementById('printClient').textContent = $clientInput.value || '—';
+        document.getElementById('printDate').textContent = $dateInput.value || '—';
+        document.getElementById('printWeather').textContent = $weatherInput.value || '—';
+        window.print();
+    };
+
+    window.copyReportText = function() {
+        if (!defects.length) { showToast('⚠️ 無資料'); return; }
+        renderReportTable();
+        let text = 'Clerk of Works Services Limited\n工程監督師 · Defects List\n';
+        text += 'Address: ' + ($addrInput.value||'—') + '  Client: ' + ($clientInput.value||'—') + '\n';
+        document.querySelectorAll('#reportBody tr').forEach(row => {
+            if (row.cells.length < 5) return;
+            text += `[${row.cells[0].textContent}] ${row.cells[1].textContent} - ${row.cells[2].textContent}\n${row.cells[3].innerHTML.replace(/<br>/g,'\n')}\n`;
+            if (row.cells[4].textContent) text += `  Remarks: ${row.cells[4].textContent}\n`;
+        });
+        navigator.clipboard.writeText(text).then(()=>showToast('📋 已複製')).catch(()=>showToast('⚠️ 複製失敗'));
+    };
+
+    window.exportJSON = function() {
+        const data = { addr:$addrInput.value, client:$clientInput.value, date:$dateInput.value, weather:$weatherInput.value, rooms, defects };
+        const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = '驗樓報告_' + ($dateInput.value||'backup') + '.json'; a.click();
+        showToast('📥 已匯出');
+    };
+
+    window.importJSON = function(input) {
+        const file = input.files[0]; if(!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (!data.rooms || !data.defects) throw new Error();
+                if (!confirm(`匯入 ${data.defects.length} 項記錄，目前資料將被覆蓋？`)) return;
+                rooms = data.rooms; defects = data.defects;
+                if (data.addr) $addrInput.value = data.addr;
+                if (data.client) $clientInput.value = data.client;
+                if (data.date) $dateInput.value = data.date;
+                if (data.weather) $weatherInput.value = data.weather;
+                selectedRoomId = null; selectedCategoryName = null;
+                renderAll(); saveToLocal(); showToast('📤 已匯入');
+            } catch { showToast('⚠️ 格式錯誤'); }
+        };
+        reader.readAsText(file); input.value = '';
+    };
+
+    function saveToLocal() {
+        const data = { addr:$addrInput.value, client:$clientInput.value, date:$dateInput.value, weather:$weatherInput.value, rooms, defects };
+        localStorage.setItem('cw_defects_report_v4', JSON.stringify(data));
+    }
+    window.saveToLocal = function() { saveToLocal(); showToast('💾 進度已儲存'); };
+
+    window.loadFromLocal = function() {
+        const raw = localStorage.getItem('cw_defects_report_v4');
+        if (!raw) { showToast('⚠️ 無儲存進度'); return; }
+        try {
+            const data = JSON.parse(raw);
+            if (data.rooms && data.defects) {
+                if (!confirm('載入進度將覆蓋目前資料，確定？')) return;
+                rooms = data.rooms; defects = data.defects;
+                if (data.addr) $addrInput.value = data.addr;
+                if (data.client) $clientInput.value = data.client;
+                if (data.date) $dateInput.value = data.date;
+                if (data.weather) $weatherInput.value = data.weather;
+                selectedRoomId = null; selectedCategoryName = null;
+                renderAll(); showToast('📂 已載入');
+            }
+        } catch { showToast('⚠️ 載入失敗'); }
+    };
+
+    function showToast(msg) { $toast.textContent = msg; $toast.classList.add('show'); clearTimeout($toast._t); $toast._t = setTimeout(() => $toast.classList.remove('show'), 2200); }
+    function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
+    function escapeHtmlAttr(s) { return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    init();
+})();
+</script>
+</body>
+</html>
