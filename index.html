@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=2.0">
-    <title>驗樓缺陷記錄工具 - Clerk of Works Services Limited</title>
+    <title>驗樓缺陷記錄工具 Defects Report Tool — Clerk of Works Services Limited</title>
     <style>
         :root {
             --bg: #f5f3f0;
@@ -73,7 +73,7 @@
             color: #fff; font-weight: 700; font-size: 18px;
         }
         .app-header h1 { font-size: 1.15rem; font-weight: 700; color: var(--primary); letter-spacing: 0.02em; white-space: nowrap; }
-        .app-header .subtitle { font-size: 0.78rem; color: var(--text-secondary); font-weight: 400; white-space: nowrap; }
+        .app-header .subtitle { font-size: 0.78rem; color: var(--text-secondary); font-weight: 400; max-width: min(640px, 100%); line-height: 1.35; }
         .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
         .btn {
@@ -172,7 +172,8 @@
         }
         table.report-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 600px; }
         table.report-table th, table.report-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
-        table.report-table th { background: #faf8f5; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); position: sticky; top: 0; }
+        table.report-table th { background: #faf8f5; font-weight: 700; font-size: 0.72rem; text-transform: none; letter-spacing: 0.02em; color: var(--text-secondary); position: sticky; top: 0; }
+        table.report-table th .th-en { font-size: 0.68rem; font-weight: 500; color: var(--text-secondary); opacity: 0.92; padding-top: 2px; display: inline-block; }
         table.report-table tr:hover td { background: #fdfcf9; }
         .col-item { width: 70px; font-weight: 700; color: var(--accent); white-space: nowrap; }
         .col-position { width: 150px; font-weight: 700; font-size: 0.9rem; }
@@ -234,6 +235,13 @@
 
         @keyframes highlightRow { 0% { background: #fef9e7; } 100% { background: transparent; } }
         .highlight-flash { animation: highlightRow 1.5s ease-out; }
+
+        .collapsible-toggle { cursor: pointer; font-weight: 700; color: var(--primary); user-select: none; }
+        .collapsible-toggle .arrow { display: inline-block; transition: transform 0.2s; margin-right: 4px; }
+        .collapsible-toggle.open .arrow { transform: rotate(90deg); }
+        .collapsible-content { display: none; margin-top: 8px; }
+        .collapsible-content.open { display: block; }
+        .remark-chip-wrap { margin-bottom: 6px; }
     </style>
 </head>
 <body>
@@ -241,7 +249,7 @@
 <header class="app-header">
     <div class="logo-area">
         <div class="logo-icon">CW</div>
-        <div><h1>Clerk of Works Services Limited</h1><div class="subtitle">工程監督師 · 驗樓缺陷記錄工具</div></div>
+        <div><h1>Clerk of Works Services Limited</h1><div class="subtitle">工程監督師 · 驗樓缺陷記錄工具 · Clerk of Works · New Home Defects Report Tool</div></div>
     </div>
     <div class="header-actions no-print">
         <button class="btn btn-outline btn-sm" onclick="saveToLocal()">💾 儲存進度</button>
@@ -253,7 +261,7 @@
 <div class="main-container">
     <div class="card no-print" id="inputPanel">
         <div style="margin-bottom:14px;">
-            <span class="collapsible-toggle open" onclick="toggleCollapse(this, 'projInfo')"><span class="arrow">▶</span> 項目資料</span>
+            <span class="collapsible-toggle open" onclick="toggleCollapse(this, 'projInfo')"><span class="arrow">▶</span> 項目資料 Project information</span>
             <div class="collapsible-content open" id="projInfo">
                 <div style="margin-top:10px;">
                     <div class="form-row">
@@ -262,31 +270,37 @@
                     </div>
                     <div class="form-row" style="margin-top:8px;">
                         <div><label class="proj-label">驗樓日期 Date</label><input type="date" id="dateInput"></div>
-                        <div><label class="proj-label">天氣 Weather</label><select id="weatherInput"><option>晴</option><option>陰</option><option>雨</option><option>多雲</option></select></div>
+                        <div><label class="proj-label">天氣 Weather</label><select id="weatherInput">
+                            <option>晴</option><option>陰</option><option>雨</option><option>多雲</option>
+                            <option>雷暴警告</option><option>黃色暴雨</option><option>紅色暴雨</option><option>黑色暴雨</option>
+                            <option>一號風球</option><option>三號風球</option><option>八號風球</option><option>十號風球</option>
+                        </select></div>
                     </div>
                 </div>
             </div>
         </div>
         <hr style="border:none;border-top:1px solid var(--border);margin:10px 0;">
 
-        <label class="step-label">📍 步驟一：選擇房間</label>
+        <label class="step-label">📍 步驟一 Step 1：選擇房間 Select room</label>
         <div class="chip-group" id="roomChips" style="margin-bottom:12px;"></div>
 
-        <label class="step-label">📂 步驟二：選擇類別</label>
+        <label class="step-label">📂 步驟二 Step 2：選擇類別 Select category</label>
         <div class="chip-group" id="catChips" style="margin-bottom:12px;"></div>
 
-        <label class="step-label">📝 步驟三：選擇問題描述模板</label>
+        <label class="step-label">📝 步驟三 Step 3：選擇問題描述模板 Pick description preset</label>
         <div class="template-list" id="templateList" style="margin-bottom:10px;"></div>
 
-        <div style="margin-bottom:8px;"><label>✏️ 自訂描述</label><textarea id="customDesc" placeholder="例如：部份牆身有裂紋，要修補及重髹"></textarea></div>
-        <div style="margin-bottom:8px;"><label>🗒️ 備註 Remarks</label><input type="text" id="remarksInput" placeholder="例：部份窗為玻璃幕牆設計，高位無法檢查"></div>
-        <button class="btn btn-primary" onclick="addDefect()" style="width:100%;">➕ 添加至報告</button>
+        <div style="margin-bottom:8px;"><label>✏️ 自訂描述 Custom description</label><textarea id="customDesc" placeholder="例如：部份牆身有裂紋，要修補及重髹"></textarea></div>
+        <div style="margin-bottom:8px;"><label>🗒️ 備註 Remarks</label></div>
+        <div class="chip-group remark-chip-wrap no-print" id="remarkPresetChips"></div>
+        <div style="margin-bottom:8px;"><input type="text" id="remarksInput" placeholder="可再輸入文字；或點選上方常用備註 Also type here, or tap presets above"></div>
+        <button class="btn btn-primary" onclick="addDefect()" style="width:100%;">➕ 添加至報告 Add to report</button>
         <div style="text-align:center;margin-top:6px;font-size:0.75rem;color:var(--text-secondary);">快捷鍵：Ctrl+Enter</div>
     </div>
 
     <div class="card" id="reportPanel">
         <div class="card-header">
-            <h2>📋 驗樓缺陷報告 <span class="badge" id="defectCount">0 項</span></h2>
+            <h2>📋 驗樓缺陷報告 Defects report <span class="badge" id="defectCount">0 項 / 0 items</span></h2>
             <div style="display:flex;gap:6px;flex-wrap:wrap;">
                 <button class="btn btn-ghost btn-sm no-print" onclick="refreshReport()">🔄 重新整理編號</button>
                 <button class="btn btn-ghost btn-sm no-print" onclick="clearAllDefects()">🗑️ 清空</button>
@@ -295,12 +309,12 @@
 
         <div class="print-only" style="text-align:center;margin-bottom:16px;">
             <h2 style="margin:0;font-size:16px;">Clerk of Works Services Limited</h2>
-            <p style="margin:2px 0;font-weight:700;">工程監督師 · Defects List</p>
+            <p style="margin:2px 0;font-weight:700;">工程監督師 · 驗樓缺陷清單 · Defects list</p>
             <p style="margin:2px 0;font-size:12px;">
-                Address: <span id="printAddr"></span> &nbsp;|&nbsp;
-                Client: <span id="printClient"></span> &nbsp;|&nbsp;
-                Date: <span id="printDate"></span> &nbsp;|&nbsp;
-                Weather: <span id="printWeather"></span>
+                地址 Address: <span id="printAddr"></span> &nbsp;|&nbsp;
+                客戶 Client: <span id="printClient"></span> &nbsp;|&nbsp;
+                驗樓日期 Date: <span id="printDate"></span> &nbsp;|&nbsp;
+                天氣 Weather: <span id="printWeather"></span>
             </p>
         </div>
 
@@ -308,11 +322,11 @@
             <table class="report-table" id="reportTable">
                 <thead>
                     <tr>
-                        <th class="col-item">Item</th>
-                        <th class="col-position">Room</th>
-                        <th class="col-category">Category</th>
-                        <th class="col-desc">Description of work</th>
-                        <th class="col-remarks">Remarks</th>
+                        <th class="col-item">編號<br><span class="th-en">Item no.</span></th>
+                        <th class="col-position">房間<br><span class="th-en">Room</span></th>
+                        <th class="col-category">類別<br><span class="th-en">Category</span></th>
+                        <th class="col-desc">工程描述<br><span class="th-en">Description of work</span></th>
+                        <th class="col-remarks">備註<br><span class="th-en">Remarks</span></th>
                         <th class="col-actions no-print"></th>
                     </tr>
                 </thead>
@@ -320,14 +334,25 @@
             </table>
         </div>
 
+        <div class="no-print sig-select-row form-row" style="margin-top:14px;">
+            <div>
+                <label class="proj-label">核對人 Checked by</label>
+                <select id="checkedBySelect"></select>
+            </div>
+            <div>
+                <label class="proj-label">批核人 Endorsed by</label>
+                <select id="endorsedBySelect"></select>
+            </div>
+        </div>
+
         <div class="signature-area">
             <div class="sig-block">
                 <div class="sig-line"></div>
-                <div class="sig-label">Checked by: ____________________________</div>
+                <div class="sig-label">核對人 Checked by：<br><span id="printSigChecked">____________________________</span></div>
             </div>
             <div class="sig-block">
                 <div class="sig-line"></div>
-                <div class="sig-label">Endorsed by: ____________________________</div>
+                <div class="sig-label">批核人 Endorsed by：<br><span id="printSigEndorsed">____________________________</span></div>
             </div>
         </div>
 
@@ -352,6 +377,12 @@
         { id: 6, name: '廳邊雜物房', categories: ['批盪','油漆','門','腳線及地磚','電及家電'] }
     ];
     const GENERIC_CATEGORIES = ['批盪','油漆','腳線及地磚','鋪磚','門','窗','石材','電及家電','潔具及來去水','厨櫃','玻璃趟門','欄杆','備注'];
+    const REMARK_PRESETS = ['>300 x 300mm','<300 x 300mm','>1.2mm','<1.2mm','走廊範圍','外牆範圍','設計問題'];
+    const SIGNATURE_NAMES = [
+        'Tsang Ho Yin Harry MHKPBIA',
+        'Jessica TSIM Yuen Ting, MHKPBIA, CPSI, BEAM Pro (NB)',
+        'S.T. Chow HKIA, RIBA, AP'
+    ];
 
     const categoryTemplates = {
         '批盪': ['暫沒有必修項目','部份牆身批盪不平滑，要重做','部份天花批盪有裂紋，要修補'],
@@ -375,6 +406,7 @@
     let selectedRoomId = null;
     let selectedCategoryName = null;
     let selectedTemplates = [];
+    let selectedRemarkPresets = [];
 
     const $roomChips = document.getElementById('roomChips');
     const $catChips = document.getElementById('catChips');
@@ -388,8 +420,22 @@
     const $clientInput = document.getElementById('clientInput');
     const $dateInput = document.getElementById('dateInput');
     const $weatherInput = document.getElementById('weatherInput');
+    const $remarkPresetChips = document.getElementById('remarkPresetChips');
+    const $checkedBySelect = document.getElementById('checkedBySelect');
+    const $endorsedBySelect = document.getElementById('endorsedBySelect');
+
+    function buildSignatureSelect(sel) {
+        sel.innerHTML = '';
+        sel.appendChild(new Option('（空白／Blank）', ''));
+        SIGNATURE_NAMES.forEach(n => sel.appendChild(new Option(n, n)));
+    }
 
     function init() {
+        buildSignatureSelect($checkedBySelect);
+        buildSignatureSelect($endorsedBySelect);
+        $checkedBySelect.addEventListener('change', saveToLocal);
+        $endorsedBySelect.addEventListener('change', saveToLocal);
+
         $dateInput.value = new Date().toISOString().split('T')[0];
         const saved = localStorage.getItem('cw_defects_report_v4');
         if (saved) {
@@ -402,16 +448,47 @@
                     if (data.client) $clientInput.value = data.client;
                     if (data.date) $dateInput.value = data.date;
                     if (data.weather) $weatherInput.value = data.weather;
+                    if (typeof data.checkedBy === 'string' && [...$checkedBySelect.options].some(o => o.value === data.checkedBy)) $checkedBySelect.value = data.checkedBy;
+                    if (typeof data.endorsedBy === 'string' && [...$endorsedBySelect.options].some(o => o.value === data.endorsedBy)) $endorsedBySelect.value = data.endorsedBy;
                 }
             } catch (e) {}
         }
+        renderRemarkPresetChips();
         renderAll();
         document.addEventListener('keydown', e => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); addDefect(); }
         });
     }
 
-    function renderAll() { renderRoomChips(); renderCatChips(); renderTemplateList(); renderReportTable(); }
+    window.toggleCollapse = function(trigger, contentId) {
+        const panel = document.getElementById(contentId);
+        if (!panel) return;
+        const open = trigger.classList.toggle('open');
+        panel.classList.toggle('open', open);
+    };
+
+    function syncRemarkInputFromPresets() {
+        $remarksInput.value = selectedRemarkPresets.join('; ');
+    }
+
+    function renderRemarkPresetChips() {
+        $remarkPresetChips.innerHTML = REMARK_PRESETS.map((t, i) => {
+            const on = selectedRemarkPresets.includes(t);
+            return `<span class="chip remark-chip${on ? ' active' : ''}" onclick="toggleRemarkPreset(${i})">${escapeHtml(t)}</span>`;
+        }).join('');
+    }
+
+    window.toggleRemarkPreset = function(idx) {
+        const t = REMARK_PRESETS[idx];
+        if (!t) return;
+        const at = selectedRemarkPresets.indexOf(t);
+        if (at >= 0) selectedRemarkPresets.splice(at, 1);
+        else selectedRemarkPresets.push(t);
+        syncRemarkInputFromPresets();
+        renderRemarkPresetChips();
+    };
+
+    function renderAll() { renderRoomChips(); renderCatChips(); renderTemplateList(); renderRemarkPresetChips(); renderReportTable(); }
 
     function renderRoomChips() {
         let html = rooms.map(r => `
@@ -424,8 +501,8 @@
 
     window.selectRoom = function(id) {
         selectedRoomId = id; selectedCategoryName = null; selectedTemplates = [];
-        $customDesc.value = ''; $remarksInput.value = '';
-        renderRoomChips(); renderCatChips(); renderTemplateList();
+        selectedRemarkPresets = []; $customDesc.value = ''; $remarksInput.value = '';
+        renderRoomChips(); renderCatChips(); renderTemplateList(); renderRemarkPresetChips();
     };
 
     window.addCustomRoom = function() {
@@ -444,14 +521,14 @@
 
     function renderCatChips() {
         const cats = getCurrentCategories();
-        if (!cats.length) { $catChips.innerHTML = '<span style="color:var(--text-secondary);">請先選擇房間</span>'; return; }
+        if (!cats.length) { $catChips.innerHTML = '<span style="color:var(--text-secondary);">請先選擇房間 Select a room first</span>'; return; }
         $catChips.innerHTML = cats.map(c => `<span class="chip cat-chip${selectedCategoryName===c?' active':''}" onclick="selectCategory('${escapeHtmlAttr(c)}')">${escapeHtml(c)}</span>`).join('');
     }
 
     window.selectCategory = function(cat) {
         selectedCategoryName = cat; selectedTemplates = [];
-        $customDesc.value = ''; $remarksInput.value = '';
-        renderCatChips(); renderTemplateList();
+        selectedRemarkPresets = []; $customDesc.value = ''; $remarksInput.value = '';
+        renderCatChips(); renderTemplateList(); renderRemarkPresetChips();
     };
 
     function getTemplates(cat) {
@@ -462,7 +539,7 @@
     }
 
     function renderTemplateList() {
-        if (!selectedCategoryName) { $templateList.innerHTML = '<div style="padding:20px;text-align:center;">請先選擇房間和類別</div>'; return; }
+        if (!selectedCategoryName) { $templateList.innerHTML = '<div style="padding:20px;text-align:center;">請先選擇房間和類別 Pick room and category first</div>'; return; }
         const tmpls = getTemplates(selectedCategoryName);
         $templateList.innerHTML = tmpls.map((t,i) => {
             const sel = selectedTemplates.includes(t) ? ' selected' : '';
@@ -495,17 +572,17 @@
             description: desc,
             remarks: $remarksInput.value.trim()
         });
-        selectedTemplates = []; $customDesc.value = ''; $remarksInput.value = ''; selectedCategoryName = null;
-        renderCatChips(); renderTemplateList(); renderReportTable(); saveToLocal(); showToast('✅ 已添加');
+        selectedTemplates = []; selectedRemarkPresets = []; $customDesc.value = ''; $remarksInput.value = ''; selectedCategoryName = null;
+        renderCatChips(); renderTemplateList(); renderRemarkPresetChips(); renderReportTable(); saveToLocal(); showToast('✅ 已添加 Added');
     };
 
     function renderReportTable() {
         if (!defects.length) {
-            $reportBody.innerHTML = `<tr class="empty-state"><td colspan="6">📭 尚未添加任何缺陷項目</td></tr>`;
-            $defectCount.textContent = '0 項';
+            $reportBody.innerHTML = `<tr class="empty-state"><td colspan="6">📭 尚未添加任何缺陷項目 No defects added yet</td></tr>`;
+            $defectCount.textContent = '0 項 / 0 items';
             return;
         }
-        $defectCount.textContent = defects.length + ' 項';
+        $defectCount.textContent = defects.length + ' 項 / ' + defects.length + ' items';
         const roomOrder = {}; rooms.forEach((r,i) => roomOrder[r.id] = i);
         const map = new Map();
         defects.forEach(d => {
@@ -553,24 +630,28 @@
         document.getElementById('printClient').textContent = $clientInput.value || '—';
         document.getElementById('printDate').textContent = $dateInput.value || '—';
         document.getElementById('printWeather').textContent = $weatherInput.value || '—';
+        const blank = '____________________________';
+        document.getElementById('printSigChecked').textContent = ($checkedBySelect.value || '').trim() || blank;
+        document.getElementById('printSigEndorsed').textContent = ($endorsedBySelect.value || '').trim() || blank;
         window.print();
     };
 
     window.copyReportText = function() {
         if (!defects.length) { showToast('⚠️ 無資料'); return; }
         renderReportTable();
-        let text = 'Clerk of Works Services Limited\n工程監督師 · Defects List\n';
-        text += 'Address: ' + ($addrInput.value||'—') + '  Client: ' + ($clientInput.value||'—') + '\n';
+        let text = 'Clerk of Works Services Limited\n工程監督師 · 驗樓缺陷清單 · Defects list\n';
+        text += '地址 Address: ' + ($addrInput.value||'—') + '  客戶 Client: ' + ($clientInput.value||'—') + '\n';
+        text += '驗樓日期 Date: ' + ($dateInput.value||'—') + '  天氣 Weather: ' + ($weatherInput.value||'—') + '\n';
         document.querySelectorAll('#reportBody tr').forEach(row => {
             if (row.cells.length < 5) return;
             text += `[${row.cells[0].textContent}] ${row.cells[1].textContent} - ${row.cells[2].textContent}\n${row.cells[3].innerHTML.replace(/<br>/g,'\n')}\n`;
-            if (row.cells[4].textContent) text += `  Remarks: ${row.cells[4].textContent}\n`;
+            if (row.cells[4].textContent) text += '  備註 Remarks: ' + row.cells[4].textContent + '\n';
         });
         navigator.clipboard.writeText(text).then(()=>showToast('📋 已複製')).catch(()=>showToast('⚠️ 複製失敗'));
     };
 
     window.exportJSON = function() {
-        const data = { addr:$addrInput.value, client:$clientInput.value, date:$dateInput.value, weather:$weatherInput.value, rooms, defects };
+        const data = { addr:$addrInput.value, client:$clientInput.value, date:$dateInput.value, weather:$weatherInput.value, checkedBy:$checkedBySelect.value, endorsedBy:$endorsedBySelect.value, rooms, defects };
         const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
         a.download = '驗樓報告_' + ($dateInput.value||'backup') + '.json'; a.click();
@@ -590,6 +671,8 @@
                 if (data.client) $clientInput.value = data.client;
                 if (data.date) $dateInput.value = data.date;
                 if (data.weather) $weatherInput.value = data.weather;
+                if (typeof data.checkedBy === 'string' && [...$checkedBySelect.options].some(o => o.value === data.checkedBy)) $checkedBySelect.value = data.checkedBy;
+                if (typeof data.endorsedBy === 'string' && [...$endorsedBySelect.options].some(o => o.value === data.endorsedBy)) $endorsedBySelect.value = data.endorsedBy;
                 selectedRoomId = null; selectedCategoryName = null;
                 renderAll(); saveToLocal(); showToast('📤 已匯入');
             } catch { showToast('⚠️ 格式錯誤'); }
@@ -598,7 +681,7 @@
     };
 
     function saveToLocal() {
-        const data = { addr:$addrInput.value, client:$clientInput.value, date:$dateInput.value, weather:$weatherInput.value, rooms, defects };
+        const data = { addr:$addrInput.value, client:$clientInput.value, date:$dateInput.value, weather:$weatherInput.value, checkedBy:$checkedBySelect.value, endorsedBy:$endorsedBySelect.value, rooms, defects };
         localStorage.setItem('cw_defects_report_v4', JSON.stringify(data));
     }
     window.saveToLocal = function() { saveToLocal(); showToast('💾 進度已儲存'); };
@@ -615,6 +698,8 @@
                 if (data.client) $clientInput.value = data.client;
                 if (data.date) $dateInput.value = data.date;
                 if (data.weather) $weatherInput.value = data.weather;
+                if (typeof data.checkedBy === 'string' && [...$checkedBySelect.options].some(o => o.value === data.checkedBy)) $checkedBySelect.value = data.checkedBy;
+                if (typeof data.endorsedBy === 'string' && [...$endorsedBySelect.options].some(o => o.value === data.endorsedBy)) $endorsedBySelect.value = data.endorsedBy;
                 selectedRoomId = null; selectedCategoryName = null;
                 renderAll(); showToast('📂 已載入');
             }
