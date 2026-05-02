@@ -420,7 +420,24 @@
         '腳線及地板': '腳線及地磚', '批蕩': '批盪', '橱櫃': '厨櫃', '櫥櫃': '厨櫃'
     };
 
-    let rooms = JSON.parse(JSON.stringify(DEFAULT_ROOMS));
+    const STORAGE_KEY = 'cw_defects_report_v4';
+
+    function cloneDefaultRooms() {
+        return JSON.parse(JSON.stringify(DEFAULT_ROOMS));
+    }
+
+    function mergeSavedRooms(savedRooms) {
+        const currentRooms = cloneDefaultRooms();
+        if (!Array.isArray(savedRooms)) return currentRooms;
+
+        const defaultIds = new Set(currentRooms.map(r => r.id));
+        savedRooms.forEach(room => {
+            if (room && !defaultIds.has(room.id)) currentRooms.push(room);
+        });
+        return currentRooms;
+    }
+
+    let rooms = cloneDefaultRooms();
     let defects = [];
     let selectedRoomId = null;
     let selectedCategoryName = null;
@@ -456,12 +473,12 @@
         $endorsedBySelect.addEventListener('change', saveToLocal);
 
         $dateInput.value = new Date().toISOString().split('T')[0];
-        const saved = localStorage.getItem('cw_defects_report_v4');
+        const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
             try {
                 const data = JSON.parse(saved);
                 if (data.rooms && data.defects) {
-                    rooms = data.rooms;
+                    rooms = mergeSavedRooms(data.rooms);
                     defects = data.defects;
                     if (data.addr) $addrInput.value = data.addr;
                     if (data.client) $clientInput.value = data.client;
@@ -687,7 +704,7 @@
                 const data = JSON.parse(e.target.result);
                 if (!data.rooms || !data.defects) throw new Error();
                 if (!confirm(`匯入 ${data.defects.length} 項記錄，目前資料將被覆蓋？`)) return;
-                rooms = data.rooms; defects = data.defects;
+                rooms = mergeSavedRooms(data.rooms); defects = data.defects;
                 if (data.addr) $addrInput.value = data.addr;
                 if (data.client) $clientInput.value = data.client;
                 if (data.date) $dateInput.value = data.date;
@@ -703,18 +720,18 @@
 
     function saveToLocal() {
         const data = { addr:$addrInput.value, client:$clientInput.value, date:$dateInput.value, weather:$weatherInput.value, checkedBy:$checkedBySelect.value, endorsedBy:$endorsedBySelect.value, rooms, defects };
-        localStorage.setItem('cw_defects_report_v4', JSON.stringify(data));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     }
     window.saveToLocal = function() { saveToLocal(); showToast('💾 進度已儲存'); };
 
     window.loadFromLocal = function() {
-        const raw = localStorage.getItem('cw_defects_report_v4');
+        const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) { showToast('⚠️ 無儲存進度'); return; }
         try {
             const data = JSON.parse(raw);
             if (data.rooms && data.defects) {
                 if (!confirm('載入進度將覆蓋目前資料，確定？')) return;
-                rooms = data.rooms; defects = data.defects;
+                rooms = mergeSavedRooms(data.rooms); defects = data.defects;
                 if (data.addr) $addrInput.value = data.addr;
                 if (data.client) $clientInput.value = data.client;
                 if (data.date) $dateInput.value = data.date;
