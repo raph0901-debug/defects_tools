@@ -304,7 +304,7 @@
 
     <div class="card" id="reportPanel">
         <div class="card-header">
-            <h2>📋 驗樓報告 Inspection report <span class="badge" id="defectCount">0 項 / 0 items</span></h2>
+            <span class="badge" id="defectCount" style="display:none;">0 項 / 0 items</span>
             <div style="display:flex;gap:6px;flex-wrap:wrap;">
                 <button class="btn btn-ghost btn-sm no-print" onclick="refreshReport()">🔄 重新整理編號</button>
                 <button class="btn btn-ghost btn-sm no-print" onclick="clearAllDefects()">🗑️ 清空</button>
@@ -313,7 +313,6 @@
 
         <div class="print-only" style="text-align:center;margin-bottom:16px;">
             <h2 style="margin:0;font-size:16px;">Clerk of Works Services Limited</h2>
-            <p style="margin:2px 0;font-weight:700;">工程監督師 · 驗樓報告 · Inspection report</p>
             <p style="margin:2px 0;font-size:12px;">
                 地址 Address: <span id="printAddr"></span> &nbsp;|&nbsp;
                 客戶 Client: <span id="printClient"></span> &nbsp;|&nbsp;
@@ -655,8 +654,9 @@
     }
 
     function renderDefectDescriptions(descs) {
-        return descs.map(desc => {
-            const html = escapeHtml(desc).replace(/\n/g, '<br>');
+        const lines = descs.flatMap(desc => String(desc || '').split(/\n+/).map(line => line.trim()).filter(Boolean));
+        return lines.map(line => {
+            const html = escapeHtml(line);
             return `<div class="defect-desc-item">${html}</div>`;
         }).join('');
     }
