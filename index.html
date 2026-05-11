@@ -170,20 +170,31 @@
             overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 8px;
             border-radius: var(--radius-sm); border: 1px solid var(--border);
         }
-        table.report-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 12px; min-width: 600px; }
+        table.report-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 600px; }
         table.report-table th, table.report-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; font-size: 12px; }
-        table.report-table th { background: #faf8f5; font-weight: 700; text-transform: none; letter-spacing: 0.02em; color: var(--text-secondary); position: sticky; top: 0; }
+        table.report-table thead th { background: #faf8f5; font-weight: 700; font-size: 12px; text-transform: none; letter-spacing: 0.02em; color: var(--text-secondary); }
         table.report-table th .th-en { font-size: 12px; font-weight: 500; color: var(--text-secondary); opacity: 0.92; padding-top: 2px; display: inline-block; }
         table.report-table tr:hover td { background: #fdfcf9; }
-        .col-item { width: 50px; font-weight: 700; color: var(--accent); white-space: nowrap; }
-        .col-position { width: 100px; font-weight: 700; }
-        .col-category { width: 95px; font-weight: 600; }
-        .col-desc { width: auto; }
+        .col-item { width: 70px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+        .report-table thead tr.subhead th { background: #f3f0eb; font-size: 12px; padding-top: 6px; padding-bottom: 6px; }
+        .th-position-group { text-align: center; }
+        .col-position { width: 130px; font-weight: 700; font-size: 12px; }
+        .col-position[rowspan] { vertical-align: middle; }
+        .col-category { width: 118px; font-weight: 600; }
+        .col-category[rowspan] { vertical-align: middle; }
+        .col-desc { min-width: 200px; }
         .col-remarks { width: 110px; color: var(--text-secondary); font-style: italic; }
-        .col-actions { width: 40px; text-align: center; }
-        .defect-desc-item { padding: 4px 0; border-bottom: 1px solid var(--border); }
-        .defect-desc-item:first-child { padding-top: 0; }
-        .defect-desc-item:last-child { border-bottom: none; padding-bottom: 0; }
+        .col-actions { width: 96px; text-align: center; white-space: nowrap; }
+        .col-actions .btn-icon { margin: 0 2px; }
+        table.report-table .btn-sm { font-size: 12px; }
+        table.report-table .btn-icon { font-size: 12px; }
+
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 500;
+            display: none; align-items: center; justify-content: center; padding: 16px;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-card { max-width: 560px; width: 100%; max-height: 90vh; overflow: auto; }
 
         .empty-state { text-align: center; padding: 40px 20px; color: var(--text-secondary); font-size: 0.9rem; }
         .empty-state .icon { font-size: 3rem; display: block; margin-bottom: 10px; opacity: 0.5; }
@@ -197,6 +208,7 @@
         .toast.show { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(-6px); }
 
         @media (prefers-color-scheme: dark) {
+            .report-table thead tr.subhead th { background: #33302c; color: var(--text-secondary); }
             table.report-table tr:hover td { background: #3a3632; }
             .toast { background: #3a3a3a; color: #fff; }
             .template-item { background: #2c2a26; }
@@ -223,19 +235,34 @@
         @media print {
             body { background: #fff; font-size: 12px; color: #000; }
             .app-header, .main-container .card:first-child, .btn, .toast, .no-print,
-            .col-actions, .chip-group, .template-list, .form-row, .collapsible-toggle,
+            .col-actions, .chip-group, .template-list, .modal-overlay, .form-row, .collapsible-toggle,
             .header-actions, .card-header .badge { display: none !important; }
             .main-container { display: block !important; max-width: 100%; padding: 0; gap: 0; }
             .card { box-shadow: none; border: none; padding: 0; margin-bottom: 20px; break-inside: avoid; }
-            table.report-table { font-size: 12px; min-width: auto; width: 100%; border: 1px solid #000; }
-            table.report-table th { background: #eee; color: #000; border-bottom: 2px solid #000; }
-            table.report-table th, table.report-table td { padding: 6px 8px; border: 1px solid #ccc; }
-            .defect-desc-item { border-bottom-color: #ccc; }
+            table.report-table { font-size: 12pt; min-width: auto; width: 100%; border: 1px solid #000; }
+            table.report-table th { background: #eee; color: #000; border-bottom: 2px solid #000; font-size: 12pt; }
+            table.report-table th, table.report-table td { padding: 6px 8px; border: 1px solid #ccc; font-size: 12pt; }
             .report-table-wrap { border: none; overflow-x: visible; }
             .print-only { display: block !important; }
+            .print-report-header { color: #000 !important; margin-bottom: 12px; }
+            .print-cow-name { font-size: 11pt; }
+            .print-engineer-line { font-size: 9.5pt; color: #000 !important; margin-bottom: 3px; }
+            .print-defects-title { font-size: 13pt; margin-bottom: 10px; }
+            .print-meta-block { font-size: 10.5pt; }
+            .print-meta-label { font-weight: 700; }
+            .report-table thead tr.subhead th { background: #e8e8e8 !important; color: #000 !important; font-size: 12pt !important; }
+            table.report-table th .th-en { font-size: 12pt !important; }
+            .report-table thead th.th-position-group { background: #eee !important; }
             @page { margin: 15mm; size: A4; }
         }
         .print-only { display: none; }
+        .print-report-header { color: var(--text); }
+        .print-cow-name { font-size: 0.95rem; font-weight: 700; letter-spacing: 0.04em; text-align: center; margin-bottom: 2px; }
+        .print-engineer-line { font-size: 0.78rem; text-align: center; color: var(--text-secondary); margin-bottom: 4px; }
+        .print-defects-title { font-size: 1.05rem; font-weight: 700; text-align: center; margin-bottom: 12px; }
+        .print-meta-block { font-size: 0.82rem; line-height: 1.55; max-width: 100%; }
+        .print-meta-line { margin: 2px 0; }
+        .print-meta-label { font-weight: 700; color: var(--text); }
 
         @keyframes highlightRow { 0% { background: #fef9e7; } 100% { background: transparent; } }
         .highlight-flash { animation: highlightRow 1.5s ease-out; }
@@ -291,10 +318,13 @@
         <label class="step-label">📂 步驟二 Step 2：選擇類別 Select category</label>
         <div class="chip-group" id="catChips" style="margin-bottom:12px;"></div>
 
-        <label class="step-label">📝 步驟三 Step 3：選擇問題描述模板 Pick description preset</label>
+        <label class="step-label">📝 步驟三 Step 3：情況／缺陷描述（逗號之後接「要…」「建議…」的處理句會拆去步驟四）Situation & defect wording</label>
         <div class="template-list" id="templateList" style="margin-bottom:10px;"></div>
 
-        <div style="margin-bottom:8px;"><label>✏️ 自訂描述 Custom description</label><textarea id="customDesc" placeholder="例如：部份牆身有裂紋，要修補及重髹"></textarea></div>
+        <label class="step-label">💡 步驟四 Step 4：處理／跟進（「要重做」「要填補」「建議…」等接在「，」之後的句式）Actions &amp; suggestions</label>
+        <div class="template-list suggestion-list" id="suggestionList" style="margin-bottom:10px;"></div>
+
+        <div style="margin-bottom:8px;"><label>✏️ 自訂描述 Custom description</label><textarea id="customDesc" placeholder="可只寫步驟三情況；處理句請用步驟四點選或自行補上"></textarea></div>
         <div style="margin-bottom:8px;"><label>🗒️ 備註 Remarks</label></div>
         <div class="chip-group remark-chip-wrap no-print" id="remarkPresetChips"></div>
         <div style="margin-bottom:8px;"><input type="text" id="remarksInput" placeholder="可再輸入文字；或點選上方常用備註 Also type here, or tap presets above"></div>
@@ -302,35 +332,43 @@
         <div style="text-align:center;margin-top:6px;font-size:0.75rem;color:var(--text-secondary);">快捷鍵：Ctrl+Enter</div>
     </div>
 
-    <div class="card" id="reportPanel">
+        <div class="card" id="reportPanel">
         <div class="card-header">
-            <span class="badge" id="defectCount" style="display:none;">0 項 / 0 items</span>
+            <span class="badge" id="defectCount">0 項 / 0 items</span>
             <div style="display:flex;gap:6px;flex-wrap:wrap;">
                 <button class="btn btn-ghost btn-sm no-print" onclick="refreshReport()">🔄 重新整理編號</button>
                 <button class="btn btn-ghost btn-sm no-print" onclick="clearAllDefects()">🗑️ 清空</button>
             </div>
         </div>
 
-        <div class="print-only" style="text-align:center;margin-bottom:16px;">
-            <h2 style="margin:0;font-size:16px;">Clerk of Works Services Limited</h2>
-            <p style="margin:2px 0;font-size:12px;">
-                地址 Address: <span id="printAddr"></span> &nbsp;|&nbsp;
-                客戶 Client: <span id="printClient"></span> &nbsp;|&nbsp;
-                驗樓日期 Date: <span id="printDate"></span> &nbsp;|&nbsp;
-                天氣 Weather: <span id="printWeather"></span>
-            </p>
+        <div class="print-only print-report-header">
+            <div class="print-cow-name">Clerk of Works Services Limited</div>
+            <div class="print-engineer-line">工程監督師</div>
+            <div class="print-defects-title">Defects List</div>
+            <div class="print-meta-block">
+                <div class="print-meta-line"><span class="print-meta-label">Address:</span> <span id="printAddr"></span></div>
+                <div class="print-meta-line"><span class="print-meta-label">Client:</span> <span id="printClient"></span></div>
+                <div class="print-meta-line">
+                    <span class="print-meta-label">Date of checking:</span> <span id="printDate"></span>
+                    &nbsp;&nbsp;&nbsp;
+                    <span class="print-meta-label">Weather:</span> <span id="printWeather"></span>
+                </div>
+            </div>
         </div>
 
         <div class="report-table-wrap">
             <table class="report-table" id="reportTable">
                 <thead>
                     <tr>
-                        <th class="col-item">編號<br><span class="th-en">Item no.</span></th>
-                        <th class="col-position">房間<br><span class="th-en">Room</span></th>
-                        <th class="col-category">類別<br><span class="th-en">Category</span></th>
-                        <th class="col-desc">工程描述<br><span class="th-en">Description of work</span></th>
-                        <th class="col-remarks">備註<br><span class="th-en">Remarks</span></th>
-                        <th class="col-actions no-print"></th>
+                        <th class="col-item" rowspan="2">Item<br><span class="th-en">編號</span></th>
+                        <th class="th-position-group" colspan="2">Position<br><span class="th-en">位置（房間／類別）</span></th>
+                        <th class="col-desc" rowspan="2">Description of work<br><span class="th-en">工程描述</span></th>
+                        <th class="col-remarks" rowspan="2">Remarks<br><span class="th-en">備註</span></th>
+                        <th class="col-actions no-print" rowspan="2"></th>
+                    </tr>
+                    <tr class="subhead">
+                        <th class="col-position">Room<br><span class="th-en">房間</span></th>
+                        <th class="col-category">Category<br><span class="th-en">類別</span></th>
                     </tr>
                 </thead>
                 <tbody id="reportBody"></tbody>
@@ -369,6 +407,20 @@
 
 <div class="toast" id="toast"></div>
 
+<div id="editGroupModal" class="modal-overlay no-print" aria-hidden="true">
+    <div class="modal-card card">
+        <h3 style="margin-bottom:12px;font-size:1.05rem;">修改報告項目 Edit report row</h3>
+        <label class="proj-label">工程描述 Description of work</label>
+        <textarea id="editGroupDesc" rows="10" style="margin-bottom:10px;"></textarea>
+        <label class="proj-label">備註 Remarks</label>
+        <input type="text" id="editGroupRemarks" style="margin-bottom:14px;">
+        <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
+            <button type="button" class="btn btn-ghost" onclick="closeEditGroupModal()">取消 Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="saveEditGroupModal()">儲存 Save</button>
+        </div>
+    </div>
+</div>
+
 <script>
 (function() {
     const DEFAULT_ROOMS = [
@@ -394,62 +446,176 @@
         'S.T. Chow HKIA, RIBA, AP'
     ];
 
+    const NOTE_TEMPLATES = [
+        '全屋空調不在檢查範圍內',
+        '冷氣及其他電器運作不再檢查範圍內',
+        '部份窗為玻璃幕牆設計，部份高位無法檢查',
+        '大門外門鐘底地磚裂，要更換',
+        '浴缸山口不能打開，無法檢查'
+    ];
+
     const categoryTemplates = {
-        '批盪': ['暫沒有必修項目','部份牆身批盪不平滑，要重做','部份天花批盪有裂紋，要修補','油漆起泡，有滲水跡象／滲水痕跡，要修理漏水','冷氣機對面牆底電掣左右兩旁有鬆批蕩，要拆除及重做','牆／天花有鬆批蕩／空批蕩，建議拆除及重做 <300×300 mm','玻璃窗左邊油漆起泡，有滲水跡象，要修理漏水','趟門前電掣旁油漆起泡，有滲水跡象，要修理漏水','玻璃門右邊長腳有鬆批蕩，要修理'],
-        '油漆': ['部份牆身及天花色差、凹凸不平及有污漬，要扇灰及重髹','部份牆身及天花不平滑及有污漬，要扇灰及重髹','部份牆身不平滑及有污漬，要扇灰及重髹','部份天花不平滑及有污漬，要扇灰及重髹','牆身及天花不平滑及有污漬，要扇灰及重髹','小窗外簷油漆污，要重髹','門頂生口粗糙，要重做'],
-        '腳線': ['部份腳線邊掃口有孔，要填補','部份腳線崩、花及污，要修補及清潔','部份腳線掃口污及有孔，要修補及填補','部份腳線釘孔明顯，要修補'],
-        '腳線及地磚': ['部份腳線邊掃口有孔，要填補','部份腳線崩、花及污，要修補及清潔','部份腳線及地板崩、花、凹陷及污，要修補及清潔','部份腳線及地板邊有罅，要填補','大門左邊地板鬆，要加固','全屋多處地板發黑，建議更換','大門口地板響及鬆，要修理及加固','大門邊、櫥櫃對出及主人房門邊地板鬆及拱起，要修理','櫥櫃對出、趟門邊地板鬆及響，要修理','玻璃趟門前地板凹陷及起級，要修補','玻璃窗前地板斜，建議重做','玻璃窗對出地板不平，要修理','趟門邊地板斜，要修理及加固','櫥櫃對面地板斜，要修理及加固','部份地板／腳線磚空鼓，要加固','門口地板起級，要修理','窗底地板斜，要修理','窗邊地板鬆，要加固','部份地板污，要清潔'],
-        '鋪磚': ['部份地磚掃口有罅，要填補','部份地磚掃口污，要重做','部份地磚有空鼓，要拆除及重做','冷氣底右邊磚大崩，要更換','部份牆磚、地磚掃口不平滑及孔，要填補','部份地磚／牆身磚空鼓，要加固','部份牆磚掃口有孔，要填補','洗手盆背牆磚崩／有焊漬，要修補／清潔','部份鋪磚／掃口有罅及孔，要填補','玻璃欄底地磚唧膠不平滑，要填補','欄杆底地磚拱起，有滲水痕跡，要拆除及重做','地台／牆磚起級或返白／流白眼，建議修理','兩邊窗外牆磚掃口有隙，要填補','兩邊窗外牆磚有空鼓，要更換'],
-        '大門': ['門身、門框污，要修補及清潔','門框邊及框頂掃口有罅及有孔，要填補','大門門檻石唧膠有孔，要填補','大門外左邊欠石，要補裝','大門外掃口有罅，要填補','內門框不貼，要修理及加固','門頂飾板有隙，要填補'],
-        '門': ['門有虛位，要調校或加裝膠笠','門眼斜，要重裝','門眼生鏽及刮框，要更換或清理','門眼不清，要清理','門身污，要清潔','門底爛，要修補','門柄鬆，要加固','外門柄鬆，要加固','鎖舌撞鎖片，要調校','門邊大細隙，門底刮地板，要修理','關門速度太快，要調校','關門後有虛位，建議安裝膠粒','門鎖花，要更換','門鎖底木面有孔，要填補','門彎，建議更換','門鉸欠螺絲，要補裝','鎖片及門鉸螺絲生鏽，要更換','封口線釘孔明顯及崩，要修補','門框底有罅，要填補'],
-        '潔具及來去水': ['鉚盤花，建議重磨或更換','來去水不暢順，要疏通','座廁邊／淋浴間地台有沙石，要清走','淋浴間花灑喉漏水，要修理','浴缸水龍頭底部有水痕，要檢查及修理漏水','浴缸唧膠有孔及不平滑，要填補','沖廁制不順，要修理','洗手盆／洗碗盆／廁五金有漬，要清潔','洗手盆／洗碗盆水龍頭鬆或喉嘴漏水，要加固／修補','淋浴間／花灑層架鬆，危險，要加固或重裝','座廁鬆，要加固','浴室有渠味，建議檢查及清潔'],
-        '厨櫃': ['部份櫃門斜，要調校','焗爐左邊櫃桶螺絲斜，要調校','部份櫃板／踢腳板崩、花及污，要修補及清潔','部份櫃門開門撞板／開關撞板，建議安裝膠粒','櫃檯／枱石崩花及唧膠不平滑／披口／氣泡，要修補／重做／修理','電箱內櫥櫃層板未裝，要裝上','部份櫥櫃內／櫃內花花、甩、污跡及垃圾，要修補／清潔','櫥櫃／櫃門斜或不平，建議調校／修理','抽油煙機頂／吊櫃門鉸鬆，要調較／修理','門口／頂櫃內唧膠／掃口，要修理／填補','洗碗盆底櫃內生口不對位／隔氣有異味，要修理','部份櫃內／層板不平及未裝好，要修理','全套櫃桶路軌生鏽推拉不順，要除銹／修理'],
-        '櫃': ['部份儲物櫃層板／層架不平／崩／花／污，要修理／修補及清潔','右邊頂櫃門斜／開門有刮聲，要調校／修理','儲物櫃桶鬆／抽屜鬆，要調校','電視櫃底櫃抽屜鬆／內欠層板，要調較／補裝','電視底櫃邊／飾櫃玻璃崩／鏡面甩水銀／飾面不平，要修補／更換／重磨','玻璃飾櫃門刮框／螺絲生鏽，要調校／更換'],
-        '石材': ['暫沒有必修項目','窗底石／窗台石裂／鬆／駁口明顯，要加固／修補或更換','部份石材有崩花／花痕／唧膠有孔／氣泡／不平／安裝不平，建議重修／打磨／重做','門檻石／露台邊／櫃底／洗碗盤地台石／修補明顯，要修補'],
-        '玻璃趟門': ['玻璃趟門框膠／外框唧膠／內／外框有氣泡、有罅、有孔／毛條爛／穿／底防水膠，要重做／更換／修補','外框／窗底／外框積水／披口唧膠，要檢查及修理／填補','玻璃趟門門斜／鬆、不貼框及虛位，要重裝及加固','玻璃趟門頂路軌欠膠條／門鉸生鏽，要補裝／清理或更換','玻璃趟門底掃口不平滑／底唧膠爛／滲水痕跡，要重做／修補','趟門門柄／柄鬆／撞框／推拉響／毛條有崩口，要加固／修理／更換','中間／單／雙趟門玻璃崩／花／污／冚／底冚問題，要更換／重磨／清潔／修理'],
-        '窗': ['暫沒有必修項目','部份窗／玻璃窗印花／內／外唧膠有罅、氣泡、不平滑／膠條欄／彎／甩，要修理／重做／更換／填補','窗較／窗框／窗玉／底／頂／邊欠螺絲或畫啞／鉸問題，要補裝／更換','玻璃污／花／焊漬／綁紙／扭映／大玻璃氣泡（>1mm），要清潔／重磨／更換／清走','窗柄鬆／窗緊不能打開／手柄底水痕，要加固／修理／留意漏水','窗不貼框及漏風／大埂玻璃頂外冚變形，要修理／填補','大／小窗外牆磚／簷問題（另見鋪磚／外牆）'],
-        '電及家電': ['暫沒有必修項目','抽油煙機推拉／安裝有刮聲／斜／不順，要清理／重裝／加潤滑','電掣／制／掣冚／寬頻／燈／插座斜／不貼牆／高低不平，要重裝／修理','電視制斜／儲物櫃中電掣斜，要修補','天花燈甩油／壞／座廁頂燈壞，要重油／更換','櫥櫃／廚櫃燈帶／燈條／電掣不貼／不平，要修理'],
-        '欄杆': ['玻璃／大玻璃花，建議／要重磨或更換','玻璃污／欄杆有水印，要清潔／噴油及清理','冷氣欄河鎖口不能運作，要更換','欄杆底地磚／外冚唧膠有孔／空隙，要填補／修補','煤氣生口／欄杆有銹跡／焊漬／垃圾，要清潔／清走','部份欄杆崩／花／膠紙未搣／有隙，要修補及清走'],
-        '來去水': ['去水閘吊腳／地台／洗水盆去水位有沙石垃圾，要修理／清理／清潔／清走','去水／渠冚有銹跡，要清理','洗手盆／地台去水口山冚裂／崩／欠唧膠，要修補或更換／填補','洗手盆有銹跡／欠唧膠，要除銹／填補','浴屏門框腳有隙，要注意使用避免漏水'],
-        '外牆': ['窗外牆磚／外牆掃口有隙／空鼓，要填補／更換','主人房／單位外牆伸縮縫欠唧膠及有隙，要填補','窗外簷／鋁冚未完成或尾口需補裝，建議檢修','窗外渠有垃圾，要清走'],
-        '假天花': ['暫沒有必修項目','天花油漆不平滑或山口不平，要重漆或修理','天花山口板崩，要修補或更換','門邊假天花頂／牆身電掣邊石矢／孔洞，建議填補'],
-        '浴室櫃': ['洗手盆底／座廁邊櫃層板未裝／內托孔生鏽，要補裝／除銹','櫃／鏡櫃內有污跡／欠層板膠圈／托欠膠圈，要清潔／加裝','洗手盆背／邊／木飾修補明顯／夾口及唧膠不平滑有孔，要修補／填補','櫃底有沙石及垃圾，要清潔'],
-        '其他': ['天花晾衫架／螺絲生鏽，要更換','滅火筒過期，要更換'],
-        '附註': ['全屋空調不在檢查範圍內','冷氣及其他電器運作不再檢查範圍內','部份窗為玻璃幕牆設計，部份高位無法檢查','玻璃幕牆設計，部份高位無法檢查','大門外門鐘底地磚裂，要更換','浴缸山口不能打開，無法檢查'],
-        '備注': ['全屋空調不在檢查範圍內','部份窗為玻璃幕牆設計，部份高位無法檢查','冷氣及其他電器運作不再檢查範圍內']
+        '批盪': [
+            '暫沒有必修項目',
+            '牆身／天花批盪不平滑／有裂紋，要重做／修補',
+            '油漆起泡／滲水痕跡，要修理漏水',
+            '牆／天花有空鼓，建議拆除及重做 (<300×300mm)',
+            '門邊／腳位有鬆批盪，要修理'
+        ],
+        '油漆': [
+            '牆身／天花色差、凹凸不平、有污漬，要扇灰及重髹',
+            '窗簷／門頂油漆污／粗糙，要重髹／重做'
+        ],
+        '腳線': [
+            '掃口有孔，要填補',
+            '崩、花、污、釘孔明顯，要修補及清潔'
+        ],
+        '腳線及地磚': [
+            '掃口有孔／罅，要填補',
+            '崩、花、污，要修補及清潔',
+            '地板鬆／響／斜／起級／發黑，要修理、加固或更換',
+            '空鼓，要加固',
+            '地板污，要清潔'
+        ],
+        '鋪磚': [
+            '掃口有罅／污／孔／不平滑，要填補／重做',
+            '空鼓，要拆除及重做／加固',
+            '唧膠不平滑／有滲水痕跡，要填補／重做'
+        ],
+        '大門': [
+            '門身、門框污，要修補及清潔',
+            '門檻石唧膠有孔，要填補',
+            '掃口有罅，要填補',
+            '內門框不貼／門頂飾板有隙，要修理及加固'
+        ],
+        '門': [
+            '有虛位，要調校或加裝膠笠',
+            '門眼斜／生鏽／不清，要重裝／更換／清理',
+            '門身污／底爛，要清潔／修補',
+            '門柄鬆／鎖舌撞鎖片，要加固／調校',
+            '門邊大細隙／刮地板／關門太快，要修理',
+            '門鎖花／底木面有孔，要更換／填補',
+            '門彎，建議更換',
+            '門鉸欠螺絲／生鏽，要補裝／更換',
+            '封口線釘孔明顯／崩，要修補',
+            '門框底有罅，要填補'
+        ],
+        '潔具及來去水': [
+            '鉚盤花，建議重磨或更換',
+            '來去水不暢順，要疏通',
+            '沙石垃圾，要清走',
+            '花灑喉／水龍頭漏水／有水痕，要檢查及修理',
+            '唧膠有孔／不平滑，要填補',
+            '沖廁制不順，要修理',
+            '五金有漬，要清潔',
+            '水龍頭／層架／座廁鬆，要加固或重裝',
+            '浴室有渠味，建議檢查及清潔'
+        ],
+        '厨櫃': [
+            '櫃門斜／開門撞板，要調校／安裝膠粒',
+            '櫃板／踢腳板崩、花、污，要修補及清潔',
+            '櫃檯／枱石崩花、唧膠不平滑／披口／氣泡，要修補／重做',
+            '油煙機頂／吊櫃門鉸鬆，要調校／修理',
+            '櫃內唧膠／掃口問題，要修理／填補',
+            '洗碗盆底生口不對位／隔氣有異味，要修理',
+            '層板不平／未裝好，要修理',
+            '櫃桶路軌生鏽推拉不順，要除銹／修理'
+        ],
+        '櫃': [
+            '層板／層架不平／崩／花／污，要修理／修補及清潔',
+            '櫃門斜／開門有刮聲，要調校／修理',
+            '櫃桶／抽屜鬆，要調校',
+            '抽屜欠層板，要補裝',
+            '玻璃／鏡面崩／甩水銀，要更換／重磨',
+            '飾櫃門刮框／螺絲生鏽，要調校／更換'
+        ],
+        '石材': [
+            '暫沒有必修項目',
+            '窗台石／門檻石裂／鬆／駁口明顯，要加固／修補或更換',
+            '崩花／花痕／唧膠有孔／氣泡／不平，建議重修／打磨／重做'
+        ],
+        '玻璃趟門': [
+            '框膠／唧膠有氣泡、罅、孔／毛條爛／防水膠問題，要重做／更換／修補',
+            '外框積水／披口，要檢查及修理／填補',
+            '門斜／鬆、不貼框及虛位，要重裝及加固',
+            '頂路軌欠膠條／門鉸生鏽，要補裝／清理或更換',
+            '底掃口不平滑／唧膠爛／滲水痕跡，要重做／修補',
+            '門柄鬆／撞框／推拉響／毛條崩口，要加固／修理／更換',
+            '玻璃崩／花／污，要更換／重磨／清潔'
+        ],
+        '窗': [
+            '暫沒有必修項目',
+            '玻璃印花／唧膠有罅、氣泡、不平滑／膠條爛／彎／甩，要修理／重做／更換',
+            '窗較／窗框欠螺絲或畫啞／鉸問題，要補裝／更換',
+            '玻璃污／花／焊漬／有氣泡(>1mm)，要清潔／重磨／更換',
+            '窗柄鬆／窗緊不能打開／有水痕，要加固／修理／留意漏水',
+            '窗不貼框及漏風／外冚變形，要修理／填補'
+        ],
+        '電及家電': [
+            '暫沒有必修項目',
+            '抽油煙機推拉有刮聲／斜／不順，要清理／重裝／加潤滑',
+            '電掣／插座斜／不貼牆／高低不平，要重裝／修理',
+            '天花燈甩油／壞，要重油／更換',
+            '燈帶／燈條不貼／不平，要修理'
+        ],
+        '欄杆': [
+            '玻璃花／污／有水印，要重磨或更換／清潔',
+            '冷氣欄河鎖口不能運作，要更換',
+            '底唧膠有孔／空隙，要填補／修補',
+            '有銹跡／焊漬／垃圾，要清潔／清走',
+            '崩／花／膠紙未搣／有隙，要修補及清走'
+        ],
+        '來去水': [
+            '去水閘吊腳／有沙石垃圾，要清理／清潔',
+            '渠冚有銹跡，要清理',
+            '去水口山冚裂／崩／欠唧膠，要修補或更換',
+            '洗手盆有銹跡／欠唧膠，要除銹／填補',
+            '浴屏門框腳有隙，要注意使用避免漏水'
+        ],
+        '外牆': [
+            '外牆磚／掃口有隙／空鼓，要填補／更換',
+            '伸縮縫欠唧膠及有隙，要填補',
+            '窗外簷／鋁冚未完成或尾口需補裝，建議檢修',
+            '窗外渠有垃圾，要清走'
+        ],
+        '假天花': [
+            '暫沒有必修項目',
+            '油漆不平滑／山口不平／板崩，要重漆／修補或更換',
+            '石矢／孔洞，建議填補'
+        ],
+        '浴室櫃': [
+            '層板未裝／托孔生鏽，要補裝／除銹',
+            '櫃內有污跡／欠膠圈，要清潔／加裝',
+            '木飾修補明顯／唧膠不平滑有孔，要修補／填補',
+            '櫃底有沙石及垃圾，要清潔'
+        ],
+        '其他': [
+            '晾衫架／螺絲生鏽，要更換',
+            '滅火筒過期，要更換'
+        ],
+        '附註': NOTE_TEMPLATES.slice(),
+        '備注': NOTE_TEMPLATES.slice()
     };
 
     const TEMPLATE_LOOKUP_ALIASES = {
         '腳線及地板': '腳線及地磚', '批蕩': '批盪', '橱櫃': '厨櫃', '櫥櫃': '厨櫃'
     };
 
-    const STORAGE_KEY = 'cw_defects_report_v4';
-
-    function cloneDefaultRooms() {
-        return JSON.parse(JSON.stringify(DEFAULT_ROOMS));
-    }
-
-    function mergeSavedRooms(savedRooms) {
-        const currentRooms = cloneDefaultRooms();
-        if (!Array.isArray(savedRooms)) return currentRooms;
-
-        const defaultIds = new Set(currentRooms.map(r => r.id));
-        savedRooms.forEach(room => {
-            if (room && !defaultIds.has(room.id)) currentRooms.push(room);
-        });
-        return currentRooms;
-    }
-
-    let rooms = cloneDefaultRooms();
+    let rooms = JSON.parse(JSON.stringify(DEFAULT_ROOMS));
     let defects = [];
     let selectedRoomId = null;
     let selectedCategoryName = null;
     let selectedTemplates = [];
+    let selectedSuggestionTemplates = [];
     let selectedRemarkPresets = [];
+    let editGroupIds = null;
+
+    const OPT_NO_MANDATORY = '暫沒有必收項目';
 
     const $roomChips = document.getElementById('roomChips');
     const $catChips = document.getElementById('catChips');
     const $templateList = document.getElementById('templateList');
+    const $suggestionList = document.getElementById('suggestionList');
     const $customDesc = document.getElementById('customDesc');
     const $remarksInput = document.getElementById('remarksInput');
     const $reportBody = document.getElementById('reportBody');
@@ -476,12 +642,12 @@
         $endorsedBySelect.addEventListener('change', saveToLocal);
 
         $dateInput.value = new Date().toISOString().split('T')[0];
-        const saved = localStorage.getItem(STORAGE_KEY);
+        const saved = localStorage.getItem('cw_defects_report_v4');
         if (saved) {
             try {
                 const data = JSON.parse(saved);
                 if (data.rooms && data.defects) {
-                    rooms = mergeSavedRooms(data.rooms);
+                    rooms = data.rooms;
                     defects = data.defects;
                     if (data.addr) $addrInput.value = data.addr;
                     if (data.client) $clientInput.value = data.client;
@@ -494,7 +660,9 @@
         }
         renderRemarkPresetChips();
         renderAll();
+        document.getElementById('editGroupModal').addEventListener('click', function(e) { if (e.target === this) closeEditGroupModal(); });
         document.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && document.getElementById('editGroupModal').classList.contains('open')) { closeEditGroupModal(); return; }
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); addDefect(); }
         });
     }
@@ -527,7 +695,7 @@
         renderRemarkPresetChips();
     };
 
-    function renderAll() { renderRoomChips(); renderCatChips(); renderTemplateList(); renderRemarkPresetChips(); renderReportTable(); }
+    function renderAll() { renderRoomChips(); renderCatChips(); renderTemplateList(); renderSuggestionList(); renderRemarkPresetChips(); renderReportTable(); }
 
     function renderRoomChips() {
         let html = rooms.map(r => `
@@ -540,8 +708,8 @@
 
     window.selectRoom = function(id) {
         selectedRoomId = id; selectedCategoryName = null; selectedTemplates = [];
-        selectedRemarkPresets = []; $customDesc.value = ''; $remarksInput.value = '';
-        renderRoomChips(); renderCatChips(); renderTemplateList(); renderRemarkPresetChips();
+        selectedSuggestionTemplates = []; selectedRemarkPresets = []; $customDesc.value = ''; $remarksInput.value = '';
+        renderRoomChips(); renderCatChips(); renderTemplateList(); renderSuggestionList(); renderRemarkPresetChips();
     };
 
     window.addCustomRoom = function() {
@@ -566,33 +734,121 @@
 
     window.selectCategory = function(cat) {
         selectedCategoryName = cat; selectedTemplates = [];
-        selectedRemarkPresets = []; $customDesc.value = ''; $remarksInput.value = '';
-        renderCatChips(); renderTemplateList(); renderRemarkPresetChips();
+        selectedSuggestionTemplates = []; selectedRemarkPresets = []; $customDesc.value = ''; $remarksInput.value = '';
+        renderCatChips(); renderTemplateList(); renderSuggestionList(); renderRemarkPresetChips();
     };
 
-    function getTemplates(cat) {
+    function getFullTemplateArray(cat) {
         if (!cat) return [];
         const key = TEMPLATE_LOOKUP_ALIASES[cat] || cat;
-        if (categoryTemplates[key]) return categoryTemplates[key];
-        if (categoryTemplates[cat]) return categoryTemplates[cat];
-        for (const k of Object.keys(categoryTemplates)) if (cat.includes(k) || k.includes(cat)) return categoryTemplates[k];
+        if (categoryTemplates[key]) return categoryTemplates[key].slice();
+        if (categoryTemplates[cat]) return categoryTemplates[cat].slice();
+        for (const k of Object.keys(categoryTemplates)) {
+            if (cat.includes(k) || k.includes(cat)) return categoryTemplates[k].slice();
+        }
         return ['暫沒有必修項目','部份位置有污漬，要清潔'];
     }
 
+    /** 自最後一個「，」或「,」起，若後段以「要」或「建議」開頭則分拆；否則整句屬步驟三。 */
+    function splitTemplateToWorkAndSuggestion(line) {
+        const s = String(line || '').trim();
+        if (!s) return { work: '', sugg: '' };
+        let lastCut = -1;
+        for (let i = 0; i < s.length - 1; i++) {
+            const ch = s[i];
+            if (ch !== '，' && ch !== ',') continue;
+            const tail = s.slice(i + 1).trim();
+            if (tail.startsWith('要') || tail.startsWith('建議')) lastCut = i;
+        }
+        if (lastCut < 0) {
+            if (s.startsWith('要') || s.startsWith('建議')) return { work: '', sugg: s };
+            return { work: s, sugg: '' };
+        }
+        return { work: s.slice(0, lastCut).trim(), sugg: s.slice(lastCut + 1).trim() };
+    }
+
+    function getWorkPartsForCategory(cat) {
+        const raw = getFullTemplateArray(cat);
+        const seen = new Set();
+        const out = [];
+        seen.add(OPT_NO_MANDATORY);
+        out.push(OPT_NO_MANDATORY);
+        raw.forEach(t => {
+            const { work, sugg } = splitTemplateToWorkAndSuggestion(t);
+            const w = work.trim();
+            if (!w || w === OPT_NO_MANDATORY || w === '暫沒有必修項目') return;
+            if (!seen.has(w)) { seen.add(w); out.push(w); }
+        });
+        return out;
+    }
+
+    function getSuggestionPartsForCategory(cat) {
+        const raw = getFullTemplateArray(cat);
+        const seen = new Set();
+        const out = [];
+        raw.forEach(t => {
+            const { sugg } = splitTemplateToWorkAndSuggestion(t);
+            const s = sugg.trim();
+            if (!s || seen.has(s)) return;
+            seen.add(s);
+            out.push(s);
+        });
+        return out;
+    }
+
+    /** 由步驟三、四已選模板組成自訂描述欄位應顯示之內容（與 addDefect 預設一致） */
+    function getAutoSyncedDesc() {
+        const w = selectedTemplates.join('\n').trim();
+        const s = selectedSuggestionTemplates.join('\n').trim();
+        if (w && s && !w.includes('\n') && !s.includes('\n')) return (w + '，' + s).trim();
+        if (w && s) return (w + '\n' + s).trim();
+        return (w || s).trim();
+    }
+
+    function syncCustomDescFromSelections() {
+        $customDesc.value = getAutoSyncedDesc();
+    }
+
     function renderTemplateList() {
-        if (!selectedCategoryName) { $templateList.innerHTML = '<div style="padding:20px;text-align:center;">請先選擇房間和類別 Pick room and category first</div>'; return; }
-        const tmpls = getTemplates(selectedCategoryName);
-        $templateList.innerHTML = tmpls.map((t,i) => {
+        if (!selectedCategoryName) {
+            $templateList.innerHTML = '<div style="padding:20px;text-align:center;">請先選擇房間和類別 Pick room and category first</div>';
+            return;
+        }
+        const tmpls = getWorkPartsForCategory(selectedCategoryName);
+        $templateList.innerHTML = tmpls.map((t, i) => {
             const sel = selectedTemplates.includes(t) ? ' selected' : '';
-            return `<div class="template-item${sel}" onclick="toggleTemplate('${escapeHtmlAttr(t)}', this)"><span class="tmpl-num">${i+1}.</span><span class="tmpl-text">${escapeHtml(t)}</span><span class="tmpl-check">✓</span></div>`;
+            return `<div class="template-item${sel}" onclick="toggleTemplate('${escapeHtmlAttr(t)}', this)"><span class="tmpl-num">${i + 1}.</span><span class="tmpl-text">${escapeHtml(t)}</span><span class="tmpl-check">✓</span></div>`;
+        }).join('');
+    }
+
+    function renderSuggestionList() {
+        if (!selectedCategoryName) {
+            $suggestionList.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-secondary);">請先選擇房間和類別</div>';
+            return;
+        }
+        const tmpls = getSuggestionPartsForCategory(selectedCategoryName);
+        if (!tmpls.length) {
+            $suggestionList.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-secondary);">此類別暫無可拆出之「要…／建議…」處理句（整句已列於步驟三）No trailing action phrase for this category</div>';
+            return;
+        }
+        $suggestionList.innerHTML = tmpls.map((t, i) => {
+            const sel = selectedSuggestionTemplates.includes(t) ? ' selected' : '';
+            return `<div class="template-item${sel}" onclick="toggleSuggestionTemplate('${escapeHtmlAttr(t)}', this)"><span class="tmpl-num">${i + 1}.</span><span class="tmpl-text">${escapeHtml(t)}</span><span class="tmpl-check">✓</span></div>`;
         }).join('');
     }
 
     window.toggleTemplate = function(t, el) {
         const idx = selectedTemplates.indexOf(t);
-        if (idx >= 0) { selectedTemplates.splice(idx,1); el.classList.remove('selected'); }
+        if (idx >= 0) { selectedTemplates.splice(idx, 1); el.classList.remove('selected'); }
         else { selectedTemplates.push(t); el.classList.add('selected'); }
-        $customDesc.value = selectedTemplates.join('\n');
+        syncCustomDescFromSelections();
+    };
+
+    window.toggleSuggestionTemplate = function(t, el) {
+        const idx = selectedSuggestionTemplates.indexOf(t);
+        if (idx >= 0) { selectedSuggestionTemplates.splice(idx, 1); el.classList.remove('selected'); }
+        else { selectedSuggestionTemplates.push(t); el.classList.add('selected'); }
+        syncCustomDescFromSelections();
     };
 
     window.addDefect = function() {
@@ -600,21 +856,19 @@
         if (!selectedCategoryName) { showToast('⚠️ 請先選擇類別'); return; }
         const rm = rooms.find(r => r.id === selectedRoomId);
         const cv = $customDesc.value.trim();
-        let desc = '';
-        if (cv && cv !== selectedTemplates.join('\n')) desc = cv;
-        else if (selectedTemplates.length) desc = selectedTemplates.join('\n');
-        else if (cv) desc = cv;
-        else { showToast('⚠️ 請選擇模板或輸入描述'); return; }
+        const auto = getAutoSyncedDesc().trim();
+        const finalDesc = (cv && cv !== auto) ? cv : auto;
+        if (!finalDesc) { showToast('⚠️ 請於步驟三／四選模板或輸入描述'); return; }
         defects.push({
             id: Date.now(),
             roomId: rm.id,
             roomName: rm.name,
             categoryName: selectedCategoryName,
-            description: desc,
+            description: finalDesc,
             remarks: $remarksInput.value.trim()
         });
-        selectedTemplates = []; selectedRemarkPresets = []; $customDesc.value = ''; $remarksInput.value = ''; selectedCategoryName = null;
-        renderCatChips(); renderTemplateList(); renderRemarkPresetChips(); renderReportTable(); saveToLocal(); showToast('✅ 已添加 Added');
+        selectedTemplates = []; selectedSuggestionTemplates = []; selectedRemarkPresets = []; $customDesc.value = ''; $remarksInput.value = ''; selectedCategoryName = null;
+        renderCatChips(); renderTemplateList(); renderSuggestionList(); renderRemarkPresetChips(); renderReportTable(); saveToLocal(); showToast('✅ 已添加 Added');
     };
 
     function renderReportTable() {
@@ -627,39 +881,102 @@
         const roomOrder = {}; rooms.forEach((r,i) => roomOrder[r.id] = i);
         const map = new Map();
         defects.forEach(d => {
-            const k = d.roomId + '|||' + d.categoryName;
+            const descKey = (d.description || '').trim();
+            const k = d.roomId + '|||' + d.categoryName + '|||' + descKey;
             if (!map.has(k)) map.set(k, { roomId:d.roomId, roomName:d.roomName, categoryName:d.categoryName, descs:[], rems:[], ids:[] });
-            const g = map.get(k); g.descs.push(d.description); if (d.remarks) g.rems.push(d.remarks); g.ids.push(d.id);
+            const g = map.get(k);
+            g.descs.push(d.description);
+            if (d.remarks) g.rems.push(d.remarks);
+            g.ids.push(d.id);
         });
         const groups = Array.from(map.values()).sort((a,b) =>
             (roomOrder[a.roomId] - roomOrder[b.roomId]) ||
             ((rooms.find(r=>r.id===a.roomId)?.categories.indexOf(a.categoryName)||0) -
-             (rooms.find(r=>r.id===b.roomId)?.categories.indexOf(b.categoryName)||0))
+             (rooms.find(r=>r.id===b.roomId)?.categories.indexOf(b.categoryName)||0)) ||
+            (a.descs[0] || '').localeCompare(b.descs[0] || '', 'zh-HK')
         );
+        function roomRowSpan(startIdx) {
+            const rid = groups[startIdx].roomId;
+            let n = 0;
+            for (let j = startIdx; j < groups.length && groups[j].roomId === rid; j++) n++;
+            return n;
+        }
+        function roomCategoryRowSpan(startIdx) {
+            const rid = groups[startIdx].roomId;
+            const cat = groups[startIdx].categoryName;
+            let n = 0;
+            for (let j = startIdx; j < groups.length && groups[j].roomId === rid && groups[j].categoryName === cat; j++) n++;
+            return n;
+        }
         let curRoom = null, rSeq = 0, cSeq = 0;
-        $reportBody.innerHTML = groups.map(g => {
+        $reportBody.innerHTML = groups.map((g, i) => {
             if (g.roomId !== curRoom) { curRoom = g.roomId; rSeq++; cSeq = 0; }
             cSeq++;
             const item = rSeq + '.' + cSeq;
-            const descriptions = renderDefectDescriptions(g.descs);
+            const prev = i > 0 ? groups[i - 1] : null;
+            const isFirstOfRoom = i === 0 || !prev || prev.roomId !== g.roomId;
+            const isFirstOfRoomCategory = i === 0 || !prev || prev.roomId !== g.roomId || prev.categoryName !== g.categoryName;
+            const roomCell = isFirstOfRoom
+                ? `<td class="col-position" rowspan="${roomRowSpan(i)}">${escapeHtml(g.roomName)}</td>`
+                : '';
+            const categoryCell = isFirstOfRoomCategory
+                ? `<td class="col-category" rowspan="${roomCategoryRowSpan(i)}">${escapeHtml(g.categoryName)}</td>`
+                : '';
             return `<tr data-ids="${g.ids.join(',')}" data-item="${item}">
                 <td class="col-item">${item}</td>
-                <td class="col-position">${escapeHtml(g.roomName)}</td>
-                <td class="col-category">${escapeHtml(g.categoryName)}</td>
-                <td class="col-desc">${descriptions}</td>
+                ${roomCell}
+                ${categoryCell}
+                <td class="col-desc">${escapeHtml([...new Set(g.descs.map(s => String(s || '').trim()))].join('\n')).replace(/\n/g,'<br>')}</td>
                 <td class="col-remarks">${escapeHtml(g.rems.join('; '))}</td>
-                <td class="col-actions no-print"><button class="btn btn-danger btn-sm btn-icon" onclick="deleteDefectGroup('${g.ids.join(',')}')">✕</button></td>
+                <td class="col-actions no-print">
+                    <button type="button" class="btn btn-ghost btn-sm btn-icon" title="修改" onclick="editDefectGroup('${g.ids.join(',')}')">✎</button>
+                    <button type="button" class="btn btn-danger btn-sm btn-icon" title="刪除" onclick="deleteDefectGroup('${g.ids.join(',')}')">✕</button>
+                </td>
             </tr>`;
         }).join('');
     }
 
-    function renderDefectDescriptions(descs) {
-        const lines = descs.flatMap(desc => String(desc || '').split(/\n+/).map(line => line.trim()).filter(Boolean));
-        return lines.map(line => {
-            const html = escapeHtml(line);
-            return `<div class="defect-desc-item">${html}</div>`;
-        }).join('');
-    }
+    window.editDefectGroup = function(idsStr) {
+        const idArr = idsStr.split(',').map(Number).filter(Boolean);
+        const grp = defects.filter(d => idArr.includes(d.id));
+        if (!grp.length) return;
+        const descMerged = grp.map(d => d.description || '').join('\n').trim();
+        const remMerged = grp.map(d => d.remarks).filter(Boolean).join('; ');
+        document.getElementById('editGroupDesc').value = descMerged;
+        document.getElementById('editGroupRemarks').value = remMerged;
+        editGroupIds = idArr;
+        const m = document.getElementById('editGroupModal');
+        m.classList.add('open');
+        m.setAttribute('aria-hidden', 'false');
+    };
+
+    window.closeEditGroupModal = function() {
+        editGroupIds = null;
+        const m = document.getElementById('editGroupModal');
+        m.classList.remove('open');
+        m.setAttribute('aria-hidden', 'true');
+    };
+
+    window.saveEditGroupModal = function() {
+        if (!editGroupIds || !editGroupIds.length) return;
+        const d0 = defects.find(d => d.id === editGroupIds[0]);
+        if (!d0) { closeEditGroupModal(); return; }
+        const desc = document.getElementById('editGroupDesc').value.trim();
+        const rem = document.getElementById('editGroupRemarks').value.trim();
+        defects = defects.filter(d => !editGroupIds.includes(d.id));
+        defects.push({
+            id: Date.now(),
+            roomId: d0.roomId,
+            roomName: d0.roomName,
+            categoryName: d0.categoryName,
+            description: desc,
+            remarks: rem
+        });
+        closeEditGroupModal();
+        renderReportTable();
+        saveToLocal();
+        showToast('✅ 已更新 Updated');
+    };
 
     window.deleteDefectGroup = function(ids) {
         const idArr = ids.split(',').map(Number);
@@ -674,28 +991,58 @@
         defects = []; renderReportTable(); saveToLocal(); showToast('🗑️ 已清空');
     };
 
+    /** 列印用日期格式（與常用報告 PDF 一致：d/m/yyyy） */
+    function formatDateForPrint(ymd) {
+        if (!ymd || !String(ymd).trim()) return '—';
+        const p = String(ymd).trim().split('-');
+        if (p.length !== 3) return ymd;
+        const d = parseInt(p[2], 10), m = parseInt(p[1], 10), y = p[0];
+        if (!y || !m || !d) return ymd;
+        return d + '/' + m + '/' + y;
+    }
+
     window.printReport = function() {
         renderReportTable();
         document.getElementById('printAddr').textContent = $addrInput.value || '—';
         document.getElementById('printClient').textContent = $clientInput.value || '—';
-        document.getElementById('printDate').textContent = $dateInput.value || '—';
+        document.getElementById('printDate').textContent = formatDateForPrint($dateInput.value);
         document.getElementById('printWeather').textContent = $weatherInput.value || '—';
+        const chk = ($checkedBySelect.value || '').trim();
+        const end = ($endorsedBySelect.value || '').trim();
         const blank = '____________________________';
-        document.getElementById('printSigChecked').textContent = ($checkedBySelect.value || '').trim() || blank;
-        document.getElementById('printSigEndorsed').textContent = ($endorsedBySelect.value || '').trim() || blank;
+        document.getElementById('printSigChecked').textContent = chk || blank;
+        document.getElementById('printSigEndorsed').textContent = end || blank;
         window.print();
     };
 
     window.copyReportText = function() {
         if (!defects.length) { showToast('⚠️ 無資料'); return; }
         renderReportTable();
-        let text = 'Clerk of Works Services Limited\n工程監督師 · 驗樓缺陷清單 · Defects list\n';
-        text += '地址 Address: ' + ($addrInput.value||'—') + '  客戶 Client: ' + ($clientInput.value||'—') + '\n';
-        text += '驗樓日期 Date: ' + ($dateInput.value||'—') + '  天氣 Weather: ' + ($weatherInput.value||'—') + '\n';
+        let text = 'Clerk of Works Services Limited\n工程監督師\nDefects List\n';
+        text += 'Address: ' + ($addrInput.value||'—') + '\n';
+        text += 'Client: ' + ($clientInput.value||'—') + '\n';
+        text += 'Date of checking: ' + formatDateForPrint($dateInput.value) + '  Weather: ' + ($weatherInput.value||'—') + '\n';
+        let lastRoomForCopy = '';
+        let lastCatForCopy = '';
         document.querySelectorAll('#reportBody tr').forEach(row => {
-            if (row.cells.length < 5) return;
-            text += `[${row.cells[0].textContent}] ${row.cells[1].textContent} - ${row.cells[2].textContent}\n${row.cells[3].innerHTML.replace(/<br>/g,'\n')}\n`;
-            if (row.cells[4].textContent) text += '  備註 Remarks: ' + row.cells[4].textContent + '\n';
+            if (row.classList.contains('empty-state')) return;
+            const c = row.cells;
+            let item, room, cat, descCell, remCell;
+            if (c.length >= 6) {
+                item = c[0].textContent; room = c[1].textContent; cat = c[2].textContent;
+                descCell = c[3]; remCell = c[4];
+                lastRoomForCopy = room;
+                lastCatForCopy = cat;
+            } else if (c.length === 5) {
+                item = c[0].textContent; room = lastRoomForCopy; cat = c[1].textContent;
+                descCell = c[2]; remCell = c[3];
+                lastCatForCopy = cat;
+            } else if (c.length === 4) {
+                item = c[0].textContent; room = lastRoomForCopy; cat = lastCatForCopy;
+                descCell = c[1]; remCell = c[2];
+            } else return;
+            text += `[${item}] ${room} - ${cat}\n${descCell.innerHTML.replace(/<br>/g,'\n')}\n`;
+            if (remCell.textContent) text += '  備註 Remarks: ' + remCell.textContent + '\n';
         });
         navigator.clipboard.writeText(text).then(()=>showToast('📋 已複製')).catch(()=>showToast('⚠️ 複製失敗'));
     };
@@ -716,7 +1063,7 @@
                 const data = JSON.parse(e.target.result);
                 if (!data.rooms || !data.defects) throw new Error();
                 if (!confirm(`匯入 ${data.defects.length} 項記錄，目前資料將被覆蓋？`)) return;
-                rooms = mergeSavedRooms(data.rooms); defects = data.defects;
+                rooms = data.rooms; defects = data.defects;
                 if (data.addr) $addrInput.value = data.addr;
                 if (data.client) $clientInput.value = data.client;
                 if (data.date) $dateInput.value = data.date;
@@ -732,18 +1079,18 @@
 
     function saveToLocal() {
         const data = { addr:$addrInput.value, client:$clientInput.value, date:$dateInput.value, weather:$weatherInput.value, checkedBy:$checkedBySelect.value, endorsedBy:$endorsedBySelect.value, rooms, defects };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        localStorage.setItem('cw_defects_report_v4', JSON.stringify(data));
     }
     window.saveToLocal = function() { saveToLocal(); showToast('💾 進度已儲存'); };
 
     window.loadFromLocal = function() {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = localStorage.getItem('cw_defects_report_v4');
         if (!raw) { showToast('⚠️ 無儲存進度'); return; }
         try {
             const data = JSON.parse(raw);
             if (data.rooms && data.defects) {
                 if (!confirm('載入進度將覆蓋目前資料，確定？')) return;
-                rooms = mergeSavedRooms(data.rooms); defects = data.defects;
+                rooms = data.rooms; defects = data.defects;
                 if (data.addr) $addrInput.value = data.addr;
                 if (data.client) $clientInput.value = data.client;
                 if (data.date) $dateInput.value = data.date;
