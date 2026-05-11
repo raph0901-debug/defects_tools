@@ -729,8 +729,25 @@
     function renderCatChips() {
         const cats = getCurrentCategories();
         if (!cats.length) { $catChips.innerHTML = '<span style="color:var(--text-secondary);">請先選擇房間 Select a room first</span>'; return; }
-        $catChips.innerHTML = cats.map(c => `<span class="chip cat-chip${selectedCategoryName===c?' active':''}" onclick="selectCategory('${escapeHtmlAttr(c)}')">${escapeHtml(c)}</span>`).join('');
+        let html = cats.map(c => `<span class="chip cat-chip${selectedCategoryName===c?' active':''}" onclick="selectCategory('${escapeHtmlAttr(c)}')">${escapeHtml(c)}</span>`).join('');
+        html += `<span class="chip cat-chip" style="border-style:dashed;" onclick="addCustomCategory()">＋ 自訂類別</span>`;
+        $catChips.innerHTML = html;
     }
+
+    window.addCustomCategory = function() {
+        if (!selectedRoomId) { showToast('⚠️ 請先選擇房間'); return; }
+        const name = prompt('請輸入自訂類別名稱：\nEnter custom category name:');
+        if (!name) return;
+        const trimmed = name.trim();
+        if (!trimmed) return;
+        const room = rooms.find(r => r.id === selectedRoomId);
+        if (!room) return;
+        if (room.categories.includes(trimmed)) { showToast('⚠️ 此類別已存在 This category already exists'); return; }
+        room.categories.push(trimmed);
+        saveToLocal();
+        selectCategory(trimmed);
+        showToast('✅ 已新增類別 Category added');
+    };
 
     window.selectCategory = function(cat) {
         selectedCategoryName = cat; selectedTemplates = [];
