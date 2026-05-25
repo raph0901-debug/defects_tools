@@ -1085,8 +1085,16 @@
         return { work: s.slice(0, lastCut).trim(), sugg: s.slice(lastCut + 1).trim() };
     }
 
+    function removeRemarkParentheses(text) {
+        return String(text || '')
+            .replace(/[（(]\s*[^）)]*(?:mm|毫米|x|×|>|<)[^）)]*\s*[）)]/gi, '')
+            .replace(/\s{2,}/g, ' ')
+            .replace(/\s+([，,。；;])/g, '$1')
+            .trim();
+    }
+
     function expandSlashChoices(text) {
-        const source = String(text || '').trim();
+        const source = removeRemarkParentheses(text);
         if (!source) return [];
         const slashGroup = /[^\s，,、（）()]+(?:[／/][^\s，,、（）()]+)+/;
         function expandGroup(group) {
