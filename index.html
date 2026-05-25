@@ -1089,6 +1089,20 @@
         const source = String(text || '').trim();
         if (!source) return [];
         const slashGroup = /[^\s，,、（）()]+(?:[／/][^\s，,、（）()]+)+/;
+        function expandGroup(group) {
+            const parts = group.split(/[／/]/).map(part => part.trim()).filter(Boolean);
+            if (parts.length <= 1) return parts;
+            const actionPrefix = (parts[0].startsWith('建議') && parts[0] !== '建議') ? '建議' : (parts[0].startsWith('要') ? '要' : '');
+            const suffix = (parts.length === 2 && parts[1].length > parts[0].length + 1 && parts[0].length <= 3)
+                ? parts[1].slice(parts[0].length)
+                : '';
+            return parts.map((part, idx) => {
+                let out = part;
+                if (actionPrefix && idx > 0 && !out.startsWith(actionPrefix)) out = actionPrefix + out;
+                if (suffix && idx === 0 && !out.endsWith(suffix)) out += suffix;
+                return out;
+            });
+        }
         let out = [source];
         for (let guard = 0; guard < 6; guard++) {
             const next = [];
@@ -1098,7 +1112,7 @@
                 if (!match) { next.push(item); return; }
                 changed = true;
                 const group = match[0];
-                group.split(/[／/]/).map(part => part.trim()).filter(Boolean).forEach(part => {
+                expandGroup(group).forEach(part => {
                     next.push((item.slice(0, match.index) + part + item.slice(match.index + group.length)).trim());
                 });
             });
