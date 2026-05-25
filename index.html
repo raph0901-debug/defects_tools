@@ -368,7 +368,6 @@
             <button class="btn btn-outline btn-sm" onclick="saveProjectTemplate()">💾 儲存整份報告為 template</button>
             <button class="btn btn-outline btn-sm" onclick="loadProjectTemplate()">📂 選用 template 到今次報告</button>
             <label class="btn btn-outline btn-sm" style="cursor:pointer;">📤 匯入JSON成為 template<input type="file" accept=".json,application/json" onchange="importReportAsTemplate(this)" style="display:none;"></label>
-            <label class="btn btn-outline btn-sm" style="cursor:pointer;">📄 匯入PDF草稿 template<input type="file" accept=".pdf,application/pdf" onchange="importPdfAsDraftTemplate(this)" style="display:none;"></label>
             <button class="btn btn-danger btn-sm" onclick="deleteProjectTemplate()">🗑️ 刪除 template</button>
         </div>
         <hr style="border:none;border-top:1px solid var(--border);margin:10px 0;">
@@ -495,22 +494,6 @@
     </div>
 </div>
 
-<div id="pdfDraftModal" class="modal-overlay no-print" aria-hidden="true">
-    <div class="modal-card card">
-        <h3 style="margin-bottom:12px;font-size:1.05rem;">PDF 草稿 template Review PDF draft template</h3>
-        <p class="workflow-hint">系統會把 PDF 文字放入一個可修改的草稿報告項目。請先檢查文字，再儲存為 template。</p>
-        <label class="proj-label">Template name</label>
-        <input type="text" id="pdfDraftTemplateName" style="margin-bottom:10px;">
-        <label class="proj-label">Extracted PDF text / 已抽取文字</label>
-        <textarea id="pdfDraftText" rows="14" style="margin-bottom:14px;"></textarea>
-        <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
-            <button type="button" class="btn btn-ghost" onclick="closePdfDraftModal()">取消 Cancel</button>
-            <button type="button" class="btn btn-primary" onclick="savePdfDraftTemplate()">儲存為 template Save template</button>
-        </div>
-    </div>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 (function() {
     const DEFAULT_ROOMS = [
@@ -706,7 +689,6 @@
     let selectedSuggestionTemplates = [];
     let selectedRemarkPresets = [];
     let editGroupIds = null;
-    let pdfDraftTemplateData = null;
 
     const OPT_NO_MANDATORY = '暫沒有必收項目';
 
@@ -731,8 +713,6 @@
     const $projectTemplateName = document.getElementById('projectTemplateName');
     const $projectTemplateSelect = document.getElementById('projectTemplateSelect');
     const $selectedRoomSummary = document.getElementById('selectedRoomSummary');
-    const $pdfDraftTemplateName = document.getElementById('pdfDraftTemplateName');
-    const $pdfDraftText = document.getElementById('pdfDraftText');
 
     function buildSignatureSelect(sel) {
         sel.innerHTML = '';
@@ -899,107 +879,6 @@
         input.value = '';
     };
 
-    async function extractPdfText(file) {
-        if (!window.pdfjsLib) throw new Error('PDF library unavailable');
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        const data = new Uint8Array(await file.arrayBuffer());
-        const pdf = await window.pdfjsLib.getDocument({ data }).promise;
-        const pages = [];
-        for (let pageNo = 1; pageNo <= pdf.numPages; pageNo++) {
-            const page = await pdf.getPage(pageNo);
-            const content = await page.getTextContent();
-            let lastY = null;
-            const lines = [];
-            let line = [];
-            content.items.forEach(item => {
-                const y = Math.round(item.transform[5]);
-                if (lastY !== null && Math.abs(y - lastY) > 3) {
-                    if (line.length) lines.push(line.join(' ').replace(/\s+/g, ' ').trim());
-                    line = [];
-                }
-                line.push(item.str);
-                lastY = y;
-            });
-            if (line.length) lines.push(line.join(' ').replace(/\s+/g, ' ').trim());
-            pages.push(lines.filter(Boolean).join('\n'));
-        }
-        return pages.join('\n\n--- Page break ---\n\n').trim();
-    }
-
-    function makePdfDraftProjectData(text, name) {
-        const room = { id: Date.now(), name: 'PDF Draft Import', categories: ['Imported PDF Text'] };
-        return {
-            addr: name,
-            client: '',
-            date: $dateInput.value,
-            weather: $weatherInput.value,
-            checkedBy: $checkedBySelect.value,
-            endorsedBy: $endorsedBySelect.value,
-            workflowVersion: WORKFLOW_VERSION,
-            rooms: [room],
-            defects: [{
-                id: Date.now() + 1,
-                roomId: room.id,
-                roomName: room.name,
-                categoryName: 'Imported PDF Text',
-                description: text,
-                remarks: 'PDF draft - please review and edit'
-            }]
-        };
-    }
-
-    window.importPdfAsDraftTemplate = async function(input) {
-        const file = input.files[0];
-        if (!file) return;
-        try {
-            showToast('📄 正在讀取 PDF...');
-            const text = await extractPdfText(file);
-            if (!text) { showToast('⚠️ 未能抽取 PDF 文字'); return; }
-            const name = file.name.replace(/\.pdf$/i, '') || 'PDF draft template';
-            pdfDraftTemplateData = makePdfDraftProjectData(text, name);
-            $pdfDraftTemplateName.value = name;
-            $pdfDraftText.value = text;
-            const m = document.getElementById('pdfDraftModal');
-            m.classList.add('open');
-            m.setAttribute('aria-hidden', 'false');
-        } catch (e) {
-            showToast('⚠️ PDF 讀取失敗，可能是掃描圖像或受保護 PDF');
-        } finally {
-            input.value = '';
-        }
-    };
-
-    window.closePdfDraftModal = function() {
-        pdfDraftTemplateData = null;
-        const m = document.getElementById('pdfDraftModal');
-        m.classList.remove('open');
-        m.setAttribute('aria-hidden', 'true');
-    };
-
-    window.savePdfDraftTemplate = function() {
-        if (!pdfDraftTemplateData) return;
-        const name = ($pdfDraftTemplateName.value || '').trim();
-        const text = ($pdfDraftText.value || '').trim();
-        if (!name || !text) { showToast('⚠️ 請保留 template 名稱及 PDF 文字'); return; }
-        const templates = getProjectTemplates();
-        const existing = templates.find(t => t.name === name);
-        if (existing && !confirm('已有同名 template，是否覆蓋？')) return;
-        const data = makePdfDraftProjectData(text, name);
-        const payload = {
-            id: existing ? existing.id : String(Date.now()),
-            name,
-            updatedAt: new Date().toISOString(),
-            data
-        };
-        const next = existing ? templates.map(t => t.id === existing.id ? payload : t) : [payload, ...templates];
-        setProjectTemplates(next);
-        renderProjectTemplateOptions();
-        $projectTemplateSelect.value = payload.id;
-        $projectTemplateName.value = payload.name;
-        closePdfDraftModal();
-        showToast('📄 PDF 草稿 template 已儲存');
-    };
-
     window.switchWorkflowTab = function(tab) {
         const isSetup = tab === 'setup';
         document.getElementById('setupPanel').classList.toggle('active', isSetup);
@@ -1031,10 +910,8 @@
         renderRemarkPresetChips();
         renderAll();
         document.getElementById('editGroupModal').addEventListener('click', function(e) { if (e.target === this) closeEditGroupModal(); });
-        document.getElementById('pdfDraftModal').addEventListener('click', function(e) { if (e.target === this) closePdfDraftModal(); });
         document.addEventListener('keydown', e => {
             if (e.key === 'Escape' && document.getElementById('editGroupModal').classList.contains('open')) { closeEditGroupModal(); return; }
-            if (e.key === 'Escape' && document.getElementById('pdfDraftModal').classList.contains('open')) { closePdfDraftModal(); return; }
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); addDefect(); }
         });
     }
