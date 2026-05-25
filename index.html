@@ -140,6 +140,22 @@
             .app-header .subtitle { font-size: 0.7rem; }
             .btn { padding: 8px 14px; font-size: 0.82rem; }
         }
+        @media (min-width: 740px) and (orientation: landscape) {
+            .main-container.entry-mode {
+                grid-template-columns: minmax(330px, 0.9fr) minmax(420px, 1.1fr);
+                align-items: start;
+                gap: 14px;
+            }
+            .main-container.entry-mode #inputPanel,
+            .main-container.entry-mode #reportPanel {
+                max-height: calc(100vh - 118px);
+                overflow: auto;
+            }
+            .main-container.entry-mode #reportPanel {
+                position: sticky;
+                top: 98px;
+            }
+        }
 
         .card {
             background: var(--card-bg); border-radius: var(--radius-lg); padding: 18px 20px;
@@ -332,7 +348,7 @@
     <button type="button" class="tab-btn" id="entryTabBtn" onclick="switchWorkflowTab('entry')">2. 缺陷輸入 Defect entry</button>
 </nav>
 
-<div class="main-container">
+<div class="main-container setup-mode" id="workflowMain">
     <div class="card no-print tab-pane active" id="setupPanel">
         <div class="card-header">
             <h2>項目設定 Project setup</h2>
@@ -881,6 +897,9 @@
 
     window.switchWorkflowTab = function(tab) {
         const isSetup = tab === 'setup';
+        const main = document.getElementById('workflowMain');
+        main.classList.toggle('setup-mode', isSetup);
+        main.classList.toggle('entry-mode', !isSetup);
         document.getElementById('setupPanel').classList.toggle('active', isSetup);
         document.getElementById('inputPanel').classList.toggle('active', !isSetup);
         document.getElementById('setupTabBtn').classList.toggle('active', isSetup);
