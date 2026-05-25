@@ -203,7 +203,8 @@
         .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
         .chip.room-chip { font-weight: 600; padding: 8px 18px; font-size: 0.88rem; }
 
-        .template-list { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; padding-right: 4px; }
+        .template-list { display: flex; flex-wrap: wrap; gap: 8px; max-height: none; overflow: visible; padding-right: 0; }
+        .template-chip { align-items: flex-start; border-radius: var(--radius-sm); white-space: normal; text-align: left; }
         .template-item {
             padding: 10px 14px; border-radius: var(--radius-sm); border: 1.5px solid var(--border);
             cursor: pointer; font-size: 0.84rem; transition: var(--transition); background: #fafaf8;
@@ -1229,8 +1230,8 @@
         }
         const tmpls = getWorkPartsForCategory(selectedCategoryName);
         $templateList.innerHTML = tmpls.map((t, i) => {
-            const sel = selectedTemplates.includes(t) ? ' selected' : '';
-            return `<div class="template-item${sel}" onclick="toggleTemplate('${escapeHtmlAttr(t)}', this)"><span class="tmpl-num">${i + 1}.</span><span class="tmpl-text">${escapeHtml(t)}</span><span class="tmpl-check">✓</span></div>`;
+            const sel = selectedTemplates.includes(t) ? ' active' : '';
+            return `<span class="chip template-chip${sel}" onclick="toggleTemplate('${escapeHtmlAttr(t)}', this)">${i + 1}. ${escapeHtml(t)}</span>`;
         }).join('');
     }
 
@@ -1245,22 +1246,22 @@
             return;
         }
         $suggestionList.innerHTML = tmpls.map((t, i) => {
-            const sel = selectedSuggestionTemplates.includes(t) ? ' selected' : '';
-            return `<div class="template-item${sel}" onclick="toggleSuggestionTemplate('${escapeHtmlAttr(t)}', this)"><span class="tmpl-num">${i + 1}.</span><span class="tmpl-text">${escapeHtml(t)}</span><span class="tmpl-check">✓</span></div>`;
+            const sel = selectedSuggestionTemplates.includes(t) ? ' active' : '';
+            return `<span class="chip template-chip${sel}" onclick="toggleSuggestionTemplate('${escapeHtmlAttr(t)}', this)">${i + 1}. ${escapeHtml(t)}</span>`;
         }).join('');
     }
 
     window.toggleTemplate = function(t, el) {
         const idx = selectedTemplates.indexOf(t);
-        if (idx >= 0) { selectedTemplates.splice(idx, 1); el.classList.remove('selected'); }
-        else { selectedTemplates.push(t); el.classList.add('selected'); }
+        if (idx >= 0) { selectedTemplates.splice(idx, 1); el.classList.remove('active'); }
+        else { selectedTemplates.push(t); el.classList.add('active'); }
         syncCustomDescFromSelections();
     };
 
     window.toggleSuggestionTemplate = function(t, el) {
         const idx = selectedSuggestionTemplates.indexOf(t);
-        if (idx >= 0) { selectedSuggestionTemplates.splice(idx, 1); el.classList.remove('selected'); }
-        else { selectedSuggestionTemplates.push(t); el.classList.add('selected'); }
+        if (idx >= 0) { selectedSuggestionTemplates.splice(idx, 1); el.classList.remove('active'); }
+        else { selectedSuggestionTemplates.push(t); el.classList.add('active'); }
         syncCustomDescFromSelections();
     };
 
