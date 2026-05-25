@@ -92,6 +92,17 @@
             background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm);
             padding: 10px 12px; margin-bottom: 12px; font-weight: 700; color: var(--primary);
         }
+        .project-room-list {
+            display: grid; gap: 8px; margin: 10px 0 14px;
+        }
+        .project-room-item {
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+            border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px;
+            background: #fafaf8;
+        }
+        .project-room-item.active { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent-light); }
+        .project-room-item-name { font-weight: 700; color: var(--primary); }
+        .project-room-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
         .template-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
         .template-actions { display: flex; gap: 8px; flex-wrap: wrap; }
         @media (max-width: 650px) {
@@ -348,20 +359,23 @@
         </div>
 
         <hr style="border:none;border-top:1px solid var(--border);margin:10px 0;">
-        <label class="step-label">📁 Project template：重用同一項目／同類單位</label>
+        <label class="step-label">📁 Report template：重用整份報告／同類單位</label>
         <div class="template-controls">
-            <div><label class="proj-label">Template name</label><input type="text" id="projectTemplateName" placeholder="例如：黃金海灣 G室 標準報告"></div>
-            <div><label class="proj-label">Saved templates</label><select id="projectTemplateSelect"></select></div>
+            <div><label class="proj-label">Template name（可改名後再儲存）</label><input type="text" id="projectTemplateName" placeholder="例如：黃金海灣 G室 標準報告"></div>
+            <div><label class="proj-label">Choose template for this report</label><select id="projectTemplateSelect"></select></div>
         </div>
         <div class="template-actions">
-            <button class="btn btn-outline btn-sm" onclick="saveProjectTemplate()">💾 儲存現有項目為 template</button>
-            <button class="btn btn-outline btn-sm" onclick="loadProjectTemplate()">📂 載入 template</button>
+            <button class="btn btn-outline btn-sm" onclick="saveProjectTemplate()">💾 儲存整份報告為 template</button>
+            <button class="btn btn-outline btn-sm" onclick="loadProjectTemplate()">📂 選用 template 到今次報告</button>
             <button class="btn btn-danger btn-sm" onclick="deleteProjectTemplate()">🗑️ 刪除 template</button>
         </div>
         <hr style="border:none;border-top:1px solid var(--border);margin:10px 0;">
 
-        <label class="step-label">📍 步驟一 Step 1：選擇房間 Select room</label>
+        <label class="step-label">📍 步驟一 Step 1：選擇今次項目需要的房間 Select rooms for this project</label>
+        <p class="workflow-hint">先點選所有需要房間，再按 Add。之後仍可新增或刪除房間。</p>
         <div class="chip-group" id="roomChips" style="margin-bottom:12px;"></div>
+        <button class="btn btn-outline" onclick="addSelectedRoomsToProject()" style="width:100%;">➕ Add selected rooms to project</button>
+        <div class="project-room-list" id="projectRoomList"></div>
         <button class="btn btn-primary" onclick="goToEntryTab()" style="width:100%;">下一步：輸入缺陷 Continue to defect entry</button>
     </div>
 
@@ -371,6 +385,7 @@
             <button class="btn btn-ghost btn-sm" onclick="switchWorkflowTab('setup')">← 返回項目／房間</button>
         </div>
         <div class="selected-room-summary" id="selectedRoomSummary">請先在 Step 1 選擇房間 Select a room in Step 1 first</div>
+        <div class="chip-group" id="entryRoomChips" style="margin-bottom:12px;"></div>
 
         <label class="step-label">📂 步驟二 Step 2：選擇類別 Select category</label>
         <div class="chip-group" id="catChips" style="margin-bottom:12px;"></div>
@@ -662,7 +677,9 @@
     const STORAGE_KEY = 'cw_defects_report_v4';
     const PROJECT_TEMPLATE_KEY = 'cw_project_templates_v1';
 
-    let rooms = JSON.parse(JSON.stringify(DEFAULT_ROOMS));
+    const roomLibrary = JSON.parse(JSON.stringify(DEFAULT_ROOMS));
+    let rooms = [];
+    let pendingRoomIds = [];
     let defects = [];
     let selectedRoomId = null;
     let selectedCategoryName = null;
@@ -674,6 +691,8 @@
     const OPT_NO_MANDATORY = '暫沒有必收項目';
 
     const $roomChips = document.getElementById('roomChips');
+    const $entryRoomChips = document.getElementById('entryRoomChips');
+    const $projectRoomList = document.getElementById('projectRoomList');
     const $catChips = document.getElementById('catChips');
     const $templateList = document.getElementById('templateList');
     const $suggestionList = document.getElementById('suggestionList');
@@ -714,7 +733,14 @@
 
     function applyProjectData(data) {
         if (!data) return;
-        if (Array.isArray(data.rooms)) rooms = data.rooms;
+        if (Array.isArray(data.rooms)) {
+            rooms = data.rooms;
+            rooms.forEach(room => {
+                if (room && !roomLibrary.some(r => r.id === room.id || r.name === room.name)) {
+                    roomLibrary.push(JSON.parse(JSON.stringify(room)));
+                }
+            });
+        }
         if (Array.isArray(data.defects)) defects = data.defects;
         if (typeof data.addr === 'string') $addrInput.value = data.addr;
         if (typeof data.client === 'string') $clientInput.value = data.client;
@@ -722,7 +748,8 @@
         if (typeof data.weather === 'string') $weatherInput.value = data.weather;
         if (typeof data.checkedBy === 'string' && [...$checkedBySelect.options].some(o => o.value === data.checkedBy)) $checkedBySelect.value = data.checkedBy;
         if (typeof data.endorsedBy === 'string' && [...$endorsedBySelect.options].some(o => o.value === data.endorsedBy)) $endorsedBySelect.value = data.endorsedBy;
-        selectedRoomId = defects.length ? defects[0].roomId : null;
+        selectedRoomId = defects.length ? defects[0].roomId : (rooms[0]?.id || null);
+        pendingRoomIds = [];
         selectedCategoryName = null;
         selectedTemplates = [];
         selectedSuggestionTemplates = [];
@@ -755,8 +782,11 @@
         const name = ($projectTemplateName.value || '').trim() || ($addrInput.value || '').trim();
         if (!name) { showToast('⚠️ 請先輸入 template 名稱或地址'); return; }
         const templates = getProjectTemplates();
-        const existing = templates.find(t => t.name === name);
-        if (existing && !confirm('已有同名 template，是否覆蓋？')) return;
+        const selected = templates.find(t => t.id === $projectTemplateSelect.value);
+        const nameOwner = templates.find(t => t.name === name);
+        const existing = selected || nameOwner;
+        if (nameOwner && selected && nameOwner.id !== selected.id) { showToast('⚠️ 另一個 template 已使用此名稱'); return; }
+        if (nameOwner && !selected && !confirm('已有同名 template，是否覆蓋？')) return;
         const payload = {
             id: existing ? existing.id : String(Date.now()),
             name,
@@ -804,7 +834,9 @@
     };
 
     window.goToEntryTab = function() {
-        if (!selectedRoomId) { showToast('⚠️ 請先在 Step 1 選擇房間'); return; }
+        if (!selectedRoomId && rooms.length) selectedRoomId = rooms[0].id;
+        if (!selectedRoomId) { showToast('⚠️ 請先在 Step 1 加入房間'); return; }
+        renderAll();
         switchWorkflowTab('entry');
     };
 
@@ -824,14 +856,7 @@
             try {
                 const data = JSON.parse(saved);
                 if (data.rooms && data.defects) {
-                    rooms = data.rooms;
-                    defects = data.defects;
-                    if (data.addr) $addrInput.value = data.addr;
-                    if (data.client) $clientInput.value = data.client;
-                    if (data.date) $dateInput.value = data.date;
-                    if (data.weather) $weatherInput.value = data.weather;
-                    if (typeof data.checkedBy === 'string' && [...$checkedBySelect.options].some(o => o.value === data.checkedBy)) $checkedBySelect.value = data.checkedBy;
-                    if (typeof data.endorsedBy === 'string' && [...$endorsedBySelect.options].some(o => o.value === data.endorsedBy)) $endorsedBySelect.value = data.endorsedBy;
+                    applyProjectData(data);
                 }
             } catch (e) {}
         }
@@ -873,7 +898,7 @@
         renderRemarkPresetChips();
     };
 
-    function renderAll() { renderRoomChips(); renderSelectedRoomSummary(); renderCatChips(); renderTemplateList(); renderSuggestionList(); renderRemarkPresetChips(); renderReportTable(); }
+    function renderAll() { renderRoomChips(); renderProjectRoomList(); renderEntryRoomChips(); renderSelectedRoomSummary(); renderCatChips(); renderTemplateList(); renderSuggestionList(); renderRemarkPresetChips(); renderReportTable(); }
 
     function renderSelectedRoomSummary() {
         const room = rooms.find(r => r.id === selectedRoomId);
@@ -883,26 +908,98 @@
     }
 
     function renderRoomChips() {
-        let html = rooms.map(r => `
-            <span class="chip room-chip${selectedRoomId === r.id ? ' active' : ''}" onclick="selectRoom(${r.id})">
+        let html = roomLibrary.map(r => `
+            <span class="chip room-chip${pendingRoomIds.includes(r.id) ? ' active' : ''}" onclick="togglePendingProjectRoom(${r.id})">
                 ${escapeHtml(r.name)}
             </span>`).join('');
         html += `<span class="chip room-chip" style="border-style:dashed;" onclick="addCustomRoom()">＋ 自訂房間</span>`;
         $roomChips.innerHTML = html;
     }
 
+    window.togglePendingProjectRoom = function(id) {
+        if (rooms.some(r => r.id === id)) { showToast('ℹ️ 此房間已加入項目'); return; }
+        const idx = pendingRoomIds.indexOf(id);
+        if (idx >= 0) pendingRoomIds.splice(idx, 1);
+        else pendingRoomIds.push(id);
+        renderRoomChips();
+    };
+
+    window.addSelectedRoomsToProject = function() {
+        const addRooms = pendingRoomIds
+            .map(id => roomLibrary.find(r => r.id === id))
+            .filter(Boolean)
+            .filter(r => !rooms.some(existing => existing.id === r.id));
+        if (!addRooms.length) { showToast('⚠️ 請先選擇未加入的房間'); return; }
+        rooms.push(...addRooms.map(r => JSON.parse(JSON.stringify(r))));
+        if (!selectedRoomId) selectedRoomId = rooms[0].id;
+        pendingRoomIds = [];
+        renderAll();
+        saveToLocal();
+        showToast('✅ 已加入房間');
+    };
+
+    function renderProjectRoomList() {
+        if (!rooms.length) {
+            $projectRoomList.innerHTML = '<div class="workflow-hint">尚未加入房間 No project rooms added yet.</div>';
+            return;
+        }
+        $projectRoomList.innerHTML = rooms.map((room, idx) => `
+            <div class="project-room-item${selectedRoomId === room.id ? ' active' : ''}">
+                <span class="project-room-item-name">${idx + 1}. ${escapeHtml(room.name)}</span>
+                <span class="project-room-actions">
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="selectRoom(${room.id})">使用 Use</button>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="deleteProjectRoom(${room.id})">刪除 Delete</button>
+                </span>
+            </div>`).join('');
+    }
+
+    function renderEntryRoomChips() {
+        if (!rooms.length) {
+            $entryRoomChips.innerHTML = '<span style="color:var(--text-secondary);">請先在 Setup 加入房間 Add project rooms in Setup first</span>';
+            return;
+        }
+        $entryRoomChips.innerHTML = rooms.map(r => `
+            <span class="chip room-chip${selectedRoomId === r.id ? ' active' : ''}" onclick="selectRoom(${r.id})">
+                ${escapeHtml(r.name)}
+            </span>`).join('');
+    }
+
     window.selectRoom = function(id) {
         selectedRoomId = id; selectedCategoryName = null; selectedTemplates = [];
         selectedSuggestionTemplates = []; selectedRemarkPresets = []; $customDesc.value = ''; $remarksInput.value = '';
-        renderRoomChips(); renderSelectedRoomSummary(); renderCatChips(); renderTemplateList(); renderSuggestionList(); renderRemarkPresetChips();
+        renderProjectRoomList(); renderEntryRoomChips(); renderSelectedRoomSummary(); renderCatChips(); renderTemplateList(); renderSuggestionList(); renderRemarkPresetChips();
+    };
+
+    window.deleteProjectRoom = function(id) {
+        const room = rooms.find(r => r.id === id);
+        if (!room) return;
+        const linkedDefects = defects.filter(d => d.roomId === id).length;
+        const msg = linkedDefects
+            ? `刪除「${room.name}」會同時刪除 ${linkedDefects} 項相關缺陷，確定？`
+            : `確定刪除「${room.name}」？`;
+        if (!confirm(msg)) return;
+        rooms = rooms.filter(r => r.id !== id);
+        defects = defects.filter(d => d.roomId !== id);
+        if (selectedRoomId === id) selectedRoomId = rooms[0]?.id || null;
+        selectedCategoryName = null;
+        selectedTemplates = [];
+        selectedSuggestionTemplates = [];
+        renderAll();
+        saveToLocal();
+        showToast('🗑️ 已刪除房間');
     };
 
     window.addCustomRoom = function() {
         const name = prompt('請輸入自訂房間名稱：');
         if (!name) return;
-        if (rooms.some(r => r.name === name.trim())) { showToast('⚠️ 房間名稱已存在'); return; }
-        rooms.push({ id: Date.now(), name: name.trim(), categories: [...GENERIC_CATEGORIES] });
-        saveToLocal(); renderRoomChips(); showToast('✅ 已新增');
+        const trimmed = name.trim();
+        if (roomLibrary.some(r => r.name === trimmed) || rooms.some(r => r.name === trimmed)) { showToast('⚠️ 房間名稱已存在'); return; }
+        const room = { id: Date.now(), name: trimmed, categories: [...GENERIC_CATEGORIES] };
+        roomLibrary.push(room);
+        rooms.push(JSON.parse(JSON.stringify(room)));
+        if (!selectedRoomId) selectedRoomId = room.id;
+        pendingRoomIds = [];
+        saveToLocal(); renderAll(); showToast('✅ 已新增房間');
     };
 
     function getCurrentCategories() {
