@@ -367,6 +367,7 @@
         <div class="template-actions">
             <button class="btn btn-outline btn-sm" onclick="saveProjectTemplate()">💾 儲存整份報告為 template</button>
             <button class="btn btn-outline btn-sm" onclick="loadProjectTemplate()">📂 選用 template 到今次報告</button>
+            <label class="btn btn-outline btn-sm" style="cursor:pointer;">📤 匯入JSON成為 template<input type="file" accept=".json,application/json" onchange="importReportAsTemplate(this)" style="display:none;"></label>
             <button class="btn btn-danger btn-sm" onclick="deleteProjectTemplate()">🗑️ 刪除 template</button>
         </div>
         <hr style="border:none;border-top:1px solid var(--border);margin:10px 0;">
@@ -842,6 +843,40 @@
         $projectTemplateName.value = '';
         renderProjectTemplateOptions();
         showToast('🗑️ Template 已刪除');
+    };
+
+    window.importReportAsTemplate = function(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (!Array.isArray(data.rooms) || !Array.isArray(data.defects)) throw new Error();
+                const defaultName = (data.addr || file.name.replace(/\.json$/i, '') || 'Imported report').trim();
+                const name = prompt('請輸入 template 名稱：', defaultName);
+                if (!name || !name.trim()) return;
+                const templates = getProjectTemplates();
+                const existing = templates.find(t => t.name === name.trim());
+                if (existing && !confirm('已有同名 template，是否覆蓋？')) return;
+                const payload = {
+                    id: existing ? existing.id : String(Date.now()),
+                    name: name.trim(),
+                    updatedAt: new Date().toISOString(),
+                    data: { ...data, workflowVersion: WORKFLOW_VERSION }
+                };
+                const next = existing ? templates.map(t => t.id === existing.id ? payload : t) : [payload, ...templates];
+                setProjectTemplates(next);
+                renderProjectTemplateOptions();
+                $projectTemplateSelect.value = payload.id;
+                $projectTemplateName.value = payload.name;
+                showToast('📤 已匯入成為 template');
+            } catch {
+                showToast('⚠️ JSON 格式錯誤，請使用本工具匯出的備份');
+            }
+        };
+        reader.readAsText(file);
+        input.value = '';
     };
 
     window.switchWorkflowTab = function(tab) {
