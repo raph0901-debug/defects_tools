@@ -676,6 +676,7 @@
 
     const STORAGE_KEY = 'cw_defects_report_v4';
     const PROJECT_TEMPLATE_KEY = 'cw_project_templates_v1';
+    const WORKFLOW_VERSION = 2;
 
     const roomLibrary = JSON.parse(JSON.stringify(DEFAULT_ROOMS));
     let rooms = [];
@@ -726,15 +727,33 @@
             weather: $weatherInput.value,
             checkedBy: $checkedBySelect.value,
             endorsedBy: $endorsedBySelect.value,
+            workflowVersion: WORKFLOW_VERSION,
             rooms,
             defects
         };
     }
 
+    function looksLikeOldDefaultRoomSet(savedRooms) {
+        return Array.isArray(savedRooms) &&
+            savedRooms.length === DEFAULT_ROOMS.length &&
+            DEFAULT_ROOMS.every(defaultRoom => savedRooms.some(room => room && room.id === defaultRoom.id && room.name === defaultRoom.name));
+    }
+
+    function normalizeProjectRooms(data) {
+        const savedRooms = Array.isArray(data.rooms) ? data.rooms : [];
+        const savedDefects = Array.isArray(data.defects) ? data.defects : [];
+        if (data.workflowVersion === WORKFLOW_VERSION) return savedRooms;
+        if (!looksLikeOldDefaultRoomSet(savedRooms)) return savedRooms;
+
+        const usedRoomIds = new Set(savedDefects.map(d => d && d.roomId).filter(Boolean));
+        return savedRooms.filter(room => usedRoomIds.has(room.id));
+    }
+
     function applyProjectData(data) {
         if (!data) return;
-        if (Array.isArray(data.rooms)) {
-            rooms = data.rooms;
+        const normalizedRooms = normalizeProjectRooms(data);
+        if (Array.isArray(normalizedRooms)) {
+            rooms = normalizedRooms;
             rooms.forEach(room => {
                 if (room && !roomLibrary.some(r => r.id === room.id || r.name === room.name)) {
                     roomLibrary.push(JSON.parse(JSON.stringify(room)));
@@ -1066,6 +1085,29 @@
         return { work: s.slice(0, lastCut).trim(), sugg: s.slice(lastCut + 1).trim() };
     }
 
+    function expandSlashChoices(text) {
+        const source = String(text || '').trim();
+        if (!source) return [];
+        const slashGroup = /[^\s，,、（）()]+(?:[／/][^\s，,、（）()]+)+/;
+        let out = [source];
+        for (let guard = 0; guard < 6; guard++) {
+            const next = [];
+            let changed = false;
+            out.forEach(item => {
+                const match = item.match(slashGroup);
+                if (!match) { next.push(item); return; }
+                changed = true;
+                const group = match[0];
+                group.split(/[／/]/).map(part => part.trim()).filter(Boolean).forEach(part => {
+                    next.push((item.slice(0, match.index) + part + item.slice(match.index + group.length)).trim());
+                });
+            });
+            out = [...new Set(next)].slice(0, 80);
+            if (!changed) break;
+        }
+        return out;
+    }
+
     function getWorkPartsForCategory(cat) {
         const raw = getFullTemplateArray(cat);
         const seen = new Set();
@@ -1074,9 +1116,11 @@
         out.push(OPT_NO_MANDATORY);
         raw.forEach(t => {
             const { work, sugg } = splitTemplateToWorkAndSuggestion(t);
-            const w = work.trim();
-            if (!w || w === OPT_NO_MANDATORY || w === '暫沒有必修項目') return;
-            if (!seen.has(w)) { seen.add(w); out.push(w); }
+            expandSlashChoices(work).forEach(w => {
+                w = w.trim();
+                if (!w || w === OPT_NO_MANDATORY || w === '暫沒有必修項目') return;
+                if (!seen.has(w)) { seen.add(w); out.push(w); }
+            });
         });
         return out;
     }
@@ -1087,10 +1131,12 @@
         const out = [];
         raw.forEach(t => {
             const { sugg } = splitTemplateToWorkAndSuggestion(t);
-            const s = sugg.trim();
-            if (!s || seen.has(s)) return;
-            seen.add(s);
-            out.push(s);
+            expandSlashChoices(sugg).forEach(s => {
+                s = s.trim();
+                if (!s || seen.has(s)) return;
+                seen.add(s);
+                out.push(s);
+            });
         });
         return out;
     }
