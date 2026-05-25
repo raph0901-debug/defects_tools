@@ -75,6 +75,29 @@
         .app-header h1 { font-size: 1.15rem; font-weight: 700; color: var(--primary); letter-spacing: 0.02em; white-space: nowrap; }
         .app-header .subtitle { font-size: 0.78rem; color: var(--text-secondary); font-weight: 400; max-width: min(640px, 100%); line-height: 1.35; }
         .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .workflow-tabs {
+            max-width: 1300px; margin: 14px auto 0; padding: 0 20px;
+            display: flex; gap: 8px; flex-wrap: wrap;
+        }
+        .tab-btn {
+            background: var(--card-bg); color: var(--text-secondary); border: 1.5px solid var(--border);
+            border-radius: 999px; padding: 9px 16px; cursor: pointer; font-weight: 700;
+            font-family: var(--font-stack); box-shadow: var(--shadow-sm);
+        }
+        .tab-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+        .workflow-hint { font-size: 0.82rem; color: var(--text-secondary); margin: -4px 0 14px; }
+        .selected-room-summary {
+            background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm);
+            padding: 10px 12px; margin-bottom: 12px; font-weight: 700; color: var(--primary);
+        }
+        .template-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+        .template-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        @media (max-width: 650px) {
+            .workflow-tabs { padding: 0 12px; }
+            .template-controls { grid-template-columns: 1fr; }
+        }
 
         .btn {
             display: inline-flex; align-items: center; gap: 6px;
@@ -238,7 +261,7 @@
 
         @media print {
             body { background: #fff; font-size: 12px; color: #000; }
-            .app-header, .main-container .card:first-child, .btn, .toast, .no-print,
+            .app-header, .workflow-tabs, .main-container .card:first-child, .btn, .toast, .no-print,
             .col-actions, .chip-group, .template-list, .modal-overlay, .form-row, .collapsible-toggle,
             .header-actions, .card-header .badge { display: none !important; }
             .main-container { display: block !important; max-width: 100%; padding: 0; gap: 0; }
@@ -293,8 +316,17 @@
     </div>
 </header>
 
+<nav class="workflow-tabs no-print" aria-label="Report workflow">
+    <button type="button" class="tab-btn active" id="setupTabBtn" onclick="switchWorkflowTab('setup')">1. 項目及房間 Setup</button>
+    <button type="button" class="tab-btn" id="entryTabBtn" onclick="switchWorkflowTab('entry')">2. 缺陷輸入 Defect entry</button>
+</nav>
+
 <div class="main-container">
-    <div class="card no-print" id="inputPanel">
+    <div class="card no-print tab-pane active" id="setupPanel">
+        <div class="card-header">
+            <h2>項目設定 Project setup</h2>
+        </div>
+        <p class="workflow-hint">先完成項目資料及 Step 1 房間；如是重複項目，可直接載入已儲存的 project template。</p>
         <div style="margin-bottom:14px;">
             <span class="collapsible-toggle open" onclick="toggleCollapse(this, 'projInfo')"><span class="arrow">▶</span> 項目資料 Project information</span>
             <div class="collapsible-content open" id="projInfo">
@@ -314,10 +346,31 @@
                 </div>
             </div>
         </div>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:10px 0;">
+        <label class="step-label">📁 Project template：重用同一項目／同類單位</label>
+        <div class="template-controls">
+            <div><label class="proj-label">Template name</label><input type="text" id="projectTemplateName" placeholder="例如：黃金海灣 G室 標準報告"></div>
+            <div><label class="proj-label">Saved templates</label><select id="projectTemplateSelect"></select></div>
+        </div>
+        <div class="template-actions">
+            <button class="btn btn-outline btn-sm" onclick="saveProjectTemplate()">💾 儲存現有項目為 template</button>
+            <button class="btn btn-outline btn-sm" onclick="loadProjectTemplate()">📂 載入 template</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteProjectTemplate()">🗑️ 刪除 template</button>
+        </div>
         <hr style="border:none;border-top:1px solid var(--border);margin:10px 0;">
 
         <label class="step-label">📍 步驟一 Step 1：選擇房間 Select room</label>
         <div class="chip-group" id="roomChips" style="margin-bottom:12px;"></div>
+        <button class="btn btn-primary" onclick="goToEntryTab()" style="width:100%;">下一步：輸入缺陷 Continue to defect entry</button>
+    </div>
+
+    <div class="card no-print tab-pane" id="inputPanel">
+        <div class="card-header">
+            <h2>缺陷輸入 Defect entry</h2>
+            <button class="btn btn-ghost btn-sm" onclick="switchWorkflowTab('setup')">← 返回項目／房間</button>
+        </div>
+        <div class="selected-room-summary" id="selectedRoomSummary">請先在 Step 1 選擇房間 Select a room in Step 1 first</div>
 
         <label class="step-label">📂 步驟二 Step 2：選擇類別 Select category</label>
         <div class="chip-group" id="catChips" style="margin-bottom:12px;"></div>
@@ -606,6 +659,9 @@
         '腳線及地板': '腳線及地磚', '批蕩': '批盪', '橱櫃': '厨櫃', '櫥櫃': '厨櫃'
     };
 
+    const STORAGE_KEY = 'cw_defects_report_v4';
+    const PROJECT_TEMPLATE_KEY = 'cw_project_templates_v1';
+
     let rooms = JSON.parse(JSON.stringify(DEFAULT_ROOMS));
     let defects = [];
     let selectedRoomId = null;
@@ -633,6 +689,9 @@
     const $remarkPresetChips = document.getElementById('remarkPresetChips');
     const $checkedBySelect = document.getElementById('checkedBySelect');
     const $endorsedBySelect = document.getElementById('endorsedBySelect');
+    const $projectTemplateName = document.getElementById('projectTemplateName');
+    const $projectTemplateSelect = document.getElementById('projectTemplateSelect');
+    const $selectedRoomSummary = document.getElementById('selectedRoomSummary');
 
     function buildSignatureSelect(sel) {
         sel.innerHTML = '';
@@ -640,14 +699,127 @@
         SIGNATURE_NAMES.forEach(n => sel.appendChild(new Option(n, n)));
     }
 
+    function getCurrentProjectData() {
+        return {
+            addr: $addrInput.value,
+            client: $clientInput.value,
+            date: $dateInput.value,
+            weather: $weatherInput.value,
+            checkedBy: $checkedBySelect.value,
+            endorsedBy: $endorsedBySelect.value,
+            rooms,
+            defects
+        };
+    }
+
+    function applyProjectData(data) {
+        if (!data) return;
+        if (Array.isArray(data.rooms)) rooms = data.rooms;
+        if (Array.isArray(data.defects)) defects = data.defects;
+        if (typeof data.addr === 'string') $addrInput.value = data.addr;
+        if (typeof data.client === 'string') $clientInput.value = data.client;
+        if (typeof data.date === 'string') $dateInput.value = data.date;
+        if (typeof data.weather === 'string') $weatherInput.value = data.weather;
+        if (typeof data.checkedBy === 'string' && [...$checkedBySelect.options].some(o => o.value === data.checkedBy)) $checkedBySelect.value = data.checkedBy;
+        if (typeof data.endorsedBy === 'string' && [...$endorsedBySelect.options].some(o => o.value === data.endorsedBy)) $endorsedBySelect.value = data.endorsedBy;
+        selectedRoomId = defects.length ? defects[0].roomId : null;
+        selectedCategoryName = null;
+        selectedTemplates = [];
+        selectedSuggestionTemplates = [];
+        selectedRemarkPresets = [];
+        $customDesc.value = '';
+        $remarksInput.value = '';
+    }
+
+    function getProjectTemplates() {
+        try {
+            const raw = localStorage.getItem(PROJECT_TEMPLATE_KEY);
+            const list = raw ? JSON.parse(raw) : [];
+            return Array.isArray(list) ? list : [];
+        } catch {
+            return [];
+        }
+    }
+
+    function setProjectTemplates(list) {
+        localStorage.setItem(PROJECT_TEMPLATE_KEY, JSON.stringify(list));
+    }
+
+    function renderProjectTemplateOptions() {
+        const templates = getProjectTemplates();
+        $projectTemplateSelect.innerHTML = '<option value="">選擇已儲存 template Select saved template</option>' +
+            templates.map(t => `<option value="${escapeHtmlAttr(t.id)}">${escapeHtml(t.name)}</option>`).join('');
+    }
+
+    window.saveProjectTemplate = function() {
+        const name = ($projectTemplateName.value || '').trim() || ($addrInput.value || '').trim();
+        if (!name) { showToast('⚠️ 請先輸入 template 名稱或地址'); return; }
+        const templates = getProjectTemplates();
+        const existing = templates.find(t => t.name === name);
+        if (existing && !confirm('已有同名 template，是否覆蓋？')) return;
+        const payload = {
+            id: existing ? existing.id : String(Date.now()),
+            name,
+            updatedAt: new Date().toISOString(),
+            data: getCurrentProjectData()
+        };
+        const next = existing ? templates.map(t => t.id === existing.id ? payload : t) : [payload, ...templates];
+        setProjectTemplates(next);
+        renderProjectTemplateOptions();
+        $projectTemplateSelect.value = payload.id;
+        saveToLocal();
+        showToast('💾 Template 已儲存');
+    };
+
+    window.loadProjectTemplate = function() {
+        const id = $projectTemplateSelect.value;
+        const template = getProjectTemplates().find(t => t.id === id);
+        if (!template) { showToast('⚠️ 請先選擇 template'); return; }
+        if (defects.length && !confirm('載入 template 將覆蓋目前報告內容，確定？')) return;
+        applyProjectData(template.data);
+        $projectTemplateName.value = template.name;
+        renderAll();
+        saveToLocal();
+        switchWorkflowTab('entry');
+        showToast('📂 Template 已載入，可直接修改');
+    };
+
+    window.deleteProjectTemplate = function() {
+        const id = $projectTemplateSelect.value;
+        const template = getProjectTemplates().find(t => t.id === id);
+        if (!template) { showToast('⚠️ 請先選擇 template'); return; }
+        if (!confirm(`確定刪除 template「${template.name}」？`)) return;
+        setProjectTemplates(getProjectTemplates().filter(t => t.id !== id));
+        $projectTemplateName.value = '';
+        renderProjectTemplateOptions();
+        showToast('🗑️ Template 已刪除');
+    };
+
+    window.switchWorkflowTab = function(tab) {
+        const isSetup = tab === 'setup';
+        document.getElementById('setupPanel').classList.toggle('active', isSetup);
+        document.getElementById('inputPanel').classList.toggle('active', !isSetup);
+        document.getElementById('setupTabBtn').classList.toggle('active', isSetup);
+        document.getElementById('entryTabBtn').classList.toggle('active', !isSetup);
+    };
+
+    window.goToEntryTab = function() {
+        if (!selectedRoomId) { showToast('⚠️ 請先在 Step 1 選擇房間'); return; }
+        switchWorkflowTab('entry');
+    };
+
     function init() {
         buildSignatureSelect($checkedBySelect);
         buildSignatureSelect($endorsedBySelect);
         $checkedBySelect.addEventListener('change', saveToLocal);
         $endorsedBySelect.addEventListener('change', saveToLocal);
+        $projectTemplateSelect.addEventListener('change', () => {
+            const template = getProjectTemplates().find(t => t.id === $projectTemplateSelect.value);
+            $projectTemplateName.value = template ? template.name : '';
+        });
 
         $dateInput.value = new Date().toISOString().split('T')[0];
-        const saved = localStorage.getItem('cw_defects_report_v4');
+        const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
             try {
                 const data = JSON.parse(saved);
@@ -663,6 +835,7 @@
                 }
             } catch (e) {}
         }
+        renderProjectTemplateOptions();
         renderRemarkPresetChips();
         renderAll();
         document.getElementById('editGroupModal').addEventListener('click', function(e) { if (e.target === this) closeEditGroupModal(); });
@@ -700,7 +873,14 @@
         renderRemarkPresetChips();
     };
 
-    function renderAll() { renderRoomChips(); renderCatChips(); renderTemplateList(); renderSuggestionList(); renderRemarkPresetChips(); renderReportTable(); }
+    function renderAll() { renderRoomChips(); renderSelectedRoomSummary(); renderCatChips(); renderTemplateList(); renderSuggestionList(); renderRemarkPresetChips(); renderReportTable(); }
+
+    function renderSelectedRoomSummary() {
+        const room = rooms.find(r => r.id === selectedRoomId);
+        $selectedRoomSummary.textContent = room
+            ? '目前房間 Current room: ' + room.name
+            : '請先在 Step 1 選擇房間 Select a room in Step 1 first';
+    }
 
     function renderRoomChips() {
         let html = rooms.map(r => `
@@ -714,7 +894,7 @@
     window.selectRoom = function(id) {
         selectedRoomId = id; selectedCategoryName = null; selectedTemplates = [];
         selectedSuggestionTemplates = []; selectedRemarkPresets = []; $customDesc.value = ''; $remarksInput.value = '';
-        renderRoomChips(); renderCatChips(); renderTemplateList(); renderSuggestionList(); renderRemarkPresetChips();
+        renderRoomChips(); renderSelectedRoomSummary(); renderCatChips(); renderTemplateList(); renderSuggestionList(); renderRemarkPresetChips();
     };
 
     window.addCustomRoom = function() {
@@ -1076,7 +1256,7 @@
     };
 
     window.exportJSON = function() {
-        const data = { addr:$addrInput.value, client:$clientInput.value, date:$dateInput.value, weather:$weatherInput.value, checkedBy:$checkedBySelect.value, endorsedBy:$endorsedBySelect.value, rooms, defects };
+        const data = getCurrentProjectData();
         const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
         a.download = '驗樓報告_' + ($dateInput.value||'backup') + '.json'; a.click();
@@ -1091,14 +1271,7 @@
                 const data = JSON.parse(e.target.result);
                 if (!data.rooms || !data.defects) throw new Error();
                 if (!confirm(`匯入 ${data.defects.length} 項記錄，目前資料將被覆蓋？`)) return;
-                rooms = data.rooms; defects = data.defects;
-                if (data.addr) $addrInput.value = data.addr;
-                if (data.client) $clientInput.value = data.client;
-                if (data.date) $dateInput.value = data.date;
-                if (data.weather) $weatherInput.value = data.weather;
-                if (typeof data.checkedBy === 'string' && [...$checkedBySelect.options].some(o => o.value === data.checkedBy)) $checkedBySelect.value = data.checkedBy;
-                if (typeof data.endorsedBy === 'string' && [...$endorsedBySelect.options].some(o => o.value === data.endorsedBy)) $endorsedBySelect.value = data.endorsedBy;
-                selectedRoomId = null; selectedCategoryName = null;
+                applyProjectData(data);
                 renderAll(); saveToLocal(); showToast('📤 已匯入');
             } catch { showToast('⚠️ 格式錯誤'); }
         };
@@ -1106,26 +1279,18 @@
     };
 
     function saveToLocal() {
-        const data = { addr:$addrInput.value, client:$clientInput.value, date:$dateInput.value, weather:$weatherInput.value, checkedBy:$checkedBySelect.value, endorsedBy:$endorsedBySelect.value, rooms, defects };
-        localStorage.setItem('cw_defects_report_v4', JSON.stringify(data));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(getCurrentProjectData()));
     }
     window.saveToLocal = function() { saveToLocal(); showToast('💾 進度已儲存'); };
 
     window.loadFromLocal = function() {
-        const raw = localStorage.getItem('cw_defects_report_v4');
+        const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) { showToast('⚠️ 無儲存進度'); return; }
         try {
             const data = JSON.parse(raw);
             if (data.rooms && data.defects) {
                 if (!confirm('載入進度將覆蓋目前資料，確定？')) return;
-                rooms = data.rooms; defects = data.defects;
-                if (data.addr) $addrInput.value = data.addr;
-                if (data.client) $clientInput.value = data.client;
-                if (data.date) $dateInput.value = data.date;
-                if (data.weather) $weatherInput.value = data.weather;
-                if (typeof data.checkedBy === 'string' && [...$checkedBySelect.options].some(o => o.value === data.checkedBy)) $checkedBySelect.value = data.checkedBy;
-                if (typeof data.endorsedBy === 'string' && [...$endorsedBySelect.options].some(o => o.value === data.endorsedBy)) $endorsedBySelect.value = data.endorsedBy;
-                selectedRoomId = null; selectedCategoryName = null;
+                applyProjectData(data);
                 renderAll(); showToast('📂 已載入');
             }
         } catch { showToast('⚠️ 載入失敗'); }
