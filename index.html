@@ -390,10 +390,10 @@
         <label class="step-label">📂 步驟二 Step 2：選擇類別 Select category</label>
         <div class="chip-group" id="catChips" style="margin-bottom:12px;"></div>
 
-        <label class="step-label">📝 步驟三 Step 3：情況／缺陷描述（逗號之後接「要…」「建議…」的處理句會拆去步驟四）Situation & defect wording</label>
+        <label class="step-label">📝 步驟三 Step 3：情況／缺陷描述 Situation & defect wording</label>
         <div class="template-list" id="templateList" style="margin-bottom:10px;"></div>
 
-        <label class="step-label">💡 步驟四 Step 4：處理／跟進（「要重做」「要填補」「建議…」等接在「，」之後的句式）Actions &amp; suggestions</label>
+        <label class="step-label">💡 步驟四 Step 4：處理／跟進 Actions &amp; suggestions</label>
         <div class="template-list suggestion-list" id="suggestionList" style="margin-bottom:10px;"></div>
 
         <div style="margin-bottom:8px;"><label>✏️ 自訂描述 Custom description</label><textarea id="customDesc" placeholder="可只寫步驟三情況；處理句請用步驟四點選或自行補上"></textarea></div>
@@ -870,15 +870,7 @@
         });
 
         $dateInput.value = new Date().toISOString().split('T')[0];
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            try {
-                const data = JSON.parse(saved);
-                if (data.rooms && data.defects) {
-                    applyProjectData(data);
-                }
-            } catch (e) {}
-        }
+        // Start each visit as a new report; users can still load saved progress or a report template manually.
         renderProjectTemplateOptions();
         renderRemarkPresetChips();
         renderAll();
