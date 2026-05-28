@@ -217,14 +217,14 @@
         .template-item .tmpl-check { color: var(--success); font-weight: 700; flex-shrink: 0; display: none; }
         .template-item.selected .tmpl-check { display: inline; }
 
-        #reportPanel { color: #000; }
+        #reportPanel { color: #000; font-family: PMingLiU, '新細明體', serif; }
         #reportPanel .print-only, #reportPanel .signature-area, #reportPanel .sig-label { color: #000; }
         .report-table-wrap {
             overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 8px;
             border-radius: var(--radius-sm); border: 1px solid #000;
         }
         table.report-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 600px; }
-        table.report-table th, table.report-table td { padding: 10px 12px; border: 1px solid #000; text-align: left; vertical-align: top; font-size: 12px; color: #000; }
+        table.report-table th, table.report-table td { padding: 5px 8px; border: 1px solid #000; text-align: left; vertical-align: top; font-size: 12px; line-height: 1.25; color: #000; }
         table.report-table thead th { background: #faf8f5; font-weight: 700; font-size: 12px; text-transform: none; letter-spacing: 0.02em; color: #000; }
         table.report-table th .th-en { font-size: 12px; font-weight: 500; color: #000; opacity: 0.92; padding-top: 2px; display: inline-block; }
         table.report-table tr:hover td { background: #fdfcf9; }
@@ -296,7 +296,7 @@
             .card { box-shadow: none; border: none; padding: 0; margin-bottom: 20px; break-inside: avoid; }
             table.report-table { font-size: 12pt; min-width: auto; width: 100%; border: 1px solid #000; }
             table.report-table th { background: #eee; color: #000; border-bottom: 2px solid #000; font-size: 12pt; }
-            table.report-table th, table.report-table td { padding: 6px 8px; border: 1px solid #000; font-size: 12pt; color: #000; }
+            table.report-table th, table.report-table td { padding: 4px 6px; border: 1px solid #000; font-size: 12pt; line-height: 1.2; color: #000; }
             .report-table-wrap { border: none; overflow-x: visible; }
             .print-only { display: block !important; }
             .print-report-header { color: #000 !important; margin-bottom: 12px; }
@@ -514,21 +514,21 @@
 <script>
 (function() {
     const DEFAULT_ROOMS = [
-        { id: 1, name: '客廳連廚房', categories: ['批盪','油漆','腳線及地板','腳線','地板','腳線及地磚','鋪磚','大門','門','櫃','厨櫃','潔具及來去水','石材','玻璃趟門','窗','電及家電','假天花','附註','備注'] },
-        { id: 2, name: '廳露台', categories: ['鋪磚','欄杆','來去水','外牆','石材','電及家電','玻璃趟門','窗','其他','附註'] },
-        { id: 3, name: '廳邊客房', categories: ['批盪','油漆','門','腳線及地磚','窗','石材','電及家電','附註'] },
-        { id: 4, name: '浴室', categories: ['鋪磚','門','窗','石材','浴室櫃','潔具及來去水','電及家電','批盪','油漆','假天花','附註'] },
-        { id: 5, name: '主人房', categories: ['批盪','油漆','門','腳線及地磚','窗','石材','鋪磚','外牆','電及家電','附註'] },
-        { id: 6, name: '廳邊雜物房', categories: ['批盪','油漆','門','腳線及地磚','窗','電及家電','附註'] },
-        { id: 7, name: '廳左邊房', categories: ['批盪','油漆','門','腳線及地磚','窗','石材','鋪磚','電及家電','附註'] },
-        { id: 8, name: '廳右邊房', categories: ['批盪','油漆','門','腳線及地磚','窗','石材','鋪磚','電及家電','附註'] },
-        { id: 9, name: '中間房', categories: ['批盪','油漆','門','腳線及地磚','窗','石材','鋪磚','電及家電','附註'] },
-        { id: 10, name: '廚房', categories: ['批盪','油漆','腳線','腳線及地磚','鋪磚','門','厨櫃','潔具及來去水','石材','玻璃趟門','窗','電及家電','假天花','附註','備注'] },
-        { id: 11, name: '工作平台', categories: ['鋪磚','欄杆','來去水','外牆','石材','電及家電','窗','其他','附註'] },
-        { id: 12, name: '工人廁', categories: ['鋪磚','門','窗','石材','浴室櫃','潔具及來去水','電及家電','批盪','油漆','假天花','附註'] },
-        { id: 13, name: '主人浴室', categories: ['鋪磚','門','窗','石材','浴室櫃','潔具及來去水','電及家電','批盪','油漆','假天花','附註'] }
+        { id: 1, name: '客廳連廚房', categories: ['批盪','油漆','腳線','地板','鋪磚','大門','櫃','厨櫃','潔具及來去水','石材','趟門和窗','電及家電','假天花'] },
+        { id: 2, name: '廳露台', categories: ['鋪磚','欄杆','來去水','外牆','石材','電及家電','其他'] },
+        { id: 3, name: '廳邊客房', categories: ['批盪','油漆','門','腳線及地磚','趟門和窗','石材','電及家電'] },
+        { id: 4, name: '浴室', categories: ['鋪磚','門','趟門和窗','石材','浴室櫃','潔具及來去水','電及家電','批盪','油漆','假天花'] },
+        { id: 5, name: '主人房', categories: ['批盪','油漆','門','腳線及地磚','趟門和窗','石材','鋪磚','外牆','電及家電'] },
+        { id: 6, name: '廳邊雜物房', categories: ['批盪','油漆','門','腳線及地磚','趟門和窗','電及家電'] },
+        { id: 7, name: '廳左邊房', categories: ['批盪','油漆','門','腳線及地磚','趟門和窗','石材','鋪磚','電及家電'] },
+        { id: 8, name: '廳右邊房', categories: ['批盪','油漆','門','腳線及地磚','趟門和窗','石材','鋪磚','電及家電'] },
+        { id: 9, name: '中間房', categories: ['批盪','油漆','門','腳線及地磚','趟門和窗','石材','鋪磚','電及家電'] },
+        { id: 10, name: '廚房', categories: ['批盪','油漆','腳線','腳線及地磚','鋪磚','門','厨櫃','潔具及來去水','石材','趟門和窗','電及家電','假天花'] },
+        { id: 11, name: '工作平台', categories: ['鋪磚','欄杆','來去水','外牆','石材','電及家電','趟門和窗','其他'] },
+        { id: 12, name: '工人廁', categories: ['鋪磚','門','趟門和窗','石材','浴室櫃','潔具及來去水','電及家電','批盪','油漆','假天花'] },
+        { id: 13, name: '主人浴室', categories: ['鋪磚','門','趟門和窗','石材','浴室櫃','潔具及來去水','電及家電','批盪','油漆','假天花'] }
     ];
-    const GENERIC_CATEGORIES = ['批盪','油漆','腳線','腳線及地磚','鋪磚','大門','門','櫃','窗','石材','電及家電','潔具及來去水','厨櫃','浴室櫃','玻璃趟門','欄杆','來去水','外牆','假天花','其他','附註','備注'];
+    const GENERIC_CATEGORIES = ['批盪','油漆','腳線','腳線及地磚','鋪磚','大門','門','櫃','趟門和窗','石材','電及家電','潔具及來去水','厨櫃','浴室櫃','欄杆','來去水','外牆','假天花','其他'];
     const REMARK_PRESETS = ['>300 x 300mm','<300 x 300mm','>1.2mm','<1.2mm','走廊範圍','設計範圍','外牆範圍','設計問題'];
     const SIGNATURE_NAMES = [
         'Tsang Ho Yin Harry MHKPBIA',
@@ -556,7 +556,6 @@
             '暫沒有必修項目',
             '牆身／天花批盪不平滑／有裂紋，要重做／修補',
             '油漆起泡／滲水痕跡，要修理漏水',
-            '牆／天花有空鼓，建議拆除及重做 (<300×300mm)',
             '門邊／腳位有鬆批盪，要修理'
         ],
         '油漆': [
@@ -596,7 +595,17 @@
             '門身、門框污，要修補及清潔',
             '門檻石唧膠有孔，要填補',
             '掃口有罅，要填補',
-            '內門框不貼／門頂飾板有隙，要修理及加固'
+            '內門框不貼／門頂飾板有隙，要修理及加固',
+            '有虛位，要調校或加裝膠笠',
+            '門眼斜／生鏽／不清，要重裝／更換／清理',
+            '門身污／底爛，要清潔／修補',
+            '門柄鬆／鎖舌撞鎖片，要加固／調校',
+            '門邊大細隙／刮地板／關門太快，要修理',
+            '門鎖花／底木面有孔，要更換／填補',
+            '門彎，建議更換',
+            '門鉸欠螺絲／生鏽，要補裝／更換',
+            '封口線釘孔明顯／崩，要修補',
+            '門框底有罅，要填補'
         ],
         '門': [
             '有虛位，要調校或加裝膠笠',
@@ -656,6 +665,20 @@
             '底掃口不平滑／唧膠爛／滲水痕跡，要重做／修補',
             '門柄鬆／撞框／推拉響／毛條崩口，要加固／修理／更換',
             '玻璃崩／花／污，要更換／重磨／清潔'
+        ],
+        '趟門和窗': [
+            '趟門框膠／唧膠有氣泡、罅、孔／毛條爛／防水膠問題，要重做／更換／修補',
+            '趟門外框積水／披口，要檢查及修理／填補',
+            '趟門門斜／鬆、不貼框及虛位，要重裝及加固',
+            '趟門頂路軌欠膠條／門鉸生鏽，要補裝／清理或更換',
+            '趟門底掃口不平滑／唧膠爛／滲水痕跡，要重做／修補',
+            '趟門門柄鬆／撞框／推拉響／毛條崩口，要加固／修理／更換',
+            '趟門玻璃崩／花／污，要更換／重磨／清潔',
+            '窗玻璃印花／唧膠有罅、氣泡、不平滑／膠條爛／彎／甩，要修理／重做／更換',
+            '窗較／窗框欠螺絲或畫啞／鉸問題，要補裝／更換',
+            '窗玻璃污／花／焊漬／有氣泡(>1mm)，要清潔／重磨／更換',
+            '窗柄鬆／窗緊不能打開／有水痕，要加固／修理／留意漏水',
+            '窗不貼框及漏風／外冚變形，要修理／填補'
         ],
         '窗': [
             '暫沒有必修項目',
@@ -1097,7 +1120,25 @@
     function getCurrentCategories() {
         if (!selectedRoomId) return [];
         const room = rooms.find(r => r.id === selectedRoomId);
-        return room ? room.categories : [];
+        return room ? normalizeCategoriesForRoom(room) : [];
+    }
+
+    function normalizeCategoryName(cat) {
+        if (cat === '玻璃趟門' || cat === '窗') return '趟門和窗';
+        return cat;
+    }
+
+    function normalizeCategoriesForRoom(room) {
+        const disallowed = new Set(['附註', '備注', '備註']);
+        const out = [];
+        (room.categories || []).forEach(rawCat => {
+            if (disallowed.has(rawCat)) return;
+            if (room.name === '廳露台' && ['玻璃趟門', '窗', '趟門和窗'].includes(rawCat)) return;
+            if (room.name === '客廳連廚房' && ['腳線及地板', '腳線及地磚', '門'].includes(rawCat)) return;
+            const cat = normalizeCategoryName(rawCat);
+            if (!out.includes(cat)) out.push(cat);
+        });
+        return out;
     }
 
     function renderCatChips() {
@@ -1114,6 +1155,7 @@
         if (!name) return;
         const trimmed = name.trim();
         if (!trimmed) return;
+        if (['附註', '備注', '備註'].includes(trimmed)) { showToast('⚠️ Step 2 不使用備註選項'); return; }
         const room = rooms.find(r => r.id === selectedRoomId);
         if (!room) return;
         if (room.categories.includes(trimmed)) { showToast('⚠️ 此類別已存在 This category already exists'); return; }
