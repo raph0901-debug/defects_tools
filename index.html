@@ -528,7 +528,7 @@
         { id: 12, name: '工人廁', categories: ['鋪磚','門','趟門和窗','石材','浴室櫃','潔具及來去水','電及家電','批盪','油漆','假天花'] },
         { id: 13, name: '主人浴室', categories: ['鋪磚','門','趟門和窗','石材','浴室櫃','潔具及來去水','電及家電','批盪','油漆','假天花'] }
     ];
-    const GENERIC_CATEGORIES = ['批盪','油漆','腳線','腳線及地磚','鋪磚','大門','門','櫃','趟門和窗','石材','電及家電','潔具及來去水','厨櫃','浴室櫃','欄杆','來去水','外牆','假天花','其他'];
+    const GENERIC_CATEGORIES = ['批盪','油漆','腳線','腳線及地磚','鋪磚','大門','門','櫃','趟門和窗','石材','電及家電','潔具及來去水','厨櫃','浴室櫃','欄杆','來去水','外牆','假天花','其他','附註'];
     const REMARK_PRESETS = ['>300 x 300mm','<300 x 300mm','>1.2mm','<1.2mm','走廊範圍','設計範圍','外牆範圍','設計問題'];
     const SIGNATURE_NAMES = [
         'Tsang Ho Yin Harry MHKPBIA',
@@ -544,6 +544,12 @@
         '大門外門鐘底地磚裂，要更換',
         '浴缸山口不能打開，無法檢查'
     ];
+    /** Step 2「附註」類別：步驟三選項 */
+    const NOTE_STEP3_OPTIONS = [
+        '全屋空調不在檢查範圍內',
+        '玻璃幕牆設計，部份高位無法檢查'
+    ];
+    const LIVING_KITCHEN_ROOM_NAME = '客廳連廚房';
     const GLOBAL_DEFECT_TEMPLATES = [
         '天花有空批盪，建議拆卸及重做',
         '天花有空批盪，要拆卸及重做',
@@ -734,8 +740,8 @@
             '晾衫架／螺絲生鏽，要更換',
             '滅火筒過期，要更換'
         ],
-        '附註': NOTE_TEMPLATES.slice(),
-        '備注': NOTE_TEMPLATES.slice()
+        '附註': NOTE_STEP3_OPTIONS.slice(),
+        '備注': NOTE_STEP3_OPTIONS.slice()
     };
 
     const TEMPLATE_LOOKUP_ALIASES = {
@@ -763,6 +769,9 @@
         '櫃': {
             step3Deny: ['層板', '玻璃', '天花有空批盪', '牆身有空批盪'],
             step4Deny: ['建議拆卸及重做']
+        },
+        '附註': {
+            step3Allow: NOTE_STEP3_OPTIONS.slice()
         }
     };
 
@@ -984,9 +993,77 @@
     window.goToEntryTab = function() {
         if (!selectedRoomId && rooms.length) selectedRoomId = rooms[0].id;
         if (!selectedRoomId) { showToast('⚠️ 請先在 Step 1 加入房間'); return; }
+        seedProjectDefaultDefects();
         renderAll();
         switchWorkflowTab('entry');
     };
+
+    function roomSkipsPaintDefault(room) {
+        const name = (room && room.name) || '';
+        return name.includes('露台') || name.includes('浴室');
+    }
+
+    function roomHasCategory(room, cat) {
+        return normalizeCategoriesForRoom(room).includes(cat);
+    }
+
+    function buildPaintDefaultDescription() {
+        const work = getWorkPartsForCategory('油漆');
+        const sugg = getSuggestionPartsForCategory('油漆');
+        const w = work[0] || '';
+        const s = sugg[0] || '';
+        if (w && s) return (w + '，' + s).trim();
+        return (w || s).trim();
+    }
+
+    function defaultDefectKey(roomId, categoryName, description) {
+        return roomId + '|' + categoryName + '|' + String(description || '').trim();
+    }
+
+    function seedProjectDefaultDefects() {
+        const existing = new Set(defects.map(d => defaultDefectKey(d.roomId, d.categoryName, d.description)));
+        let added = 0;
+        let nextId = Date.now();
+
+        const paintDesc = buildPaintDefaultDescription();
+        if (paintDesc) {
+            rooms.forEach(room => {
+                if (roomSkipsPaintDefault(room) || !roomHasCategory(room, '油漆')) return;
+                const key = defaultDefectKey(room.id, '油漆', paintDesc);
+                if (existing.has(key)) return;
+                defects.push({
+                    id: nextId++,
+                    roomId: room.id,
+                    roomName: room.name,
+                    categoryName: '油漆',
+                    description: paintDesc,
+                    remarks: ''
+                });
+                existing.add(key);
+                added++;
+            });
+        }
+
+        const livingKitchen = rooms.find(r => r.name === LIVING_KITCHEN_ROOM_NAME);
+        if (livingKitchen && roomHasCategory(livingKitchen, '附註')) {
+            NOTE_STEP3_OPTIONS.forEach(desc => {
+                const key = defaultDefectKey(livingKitchen.id, '附註', desc);
+                if (existing.has(key)) return;
+                defects.push({
+                    id: nextId++,
+                    roomId: livingKitchen.id,
+                    roomName: livingKitchen.name,
+                    categoryName: '附註',
+                    description: desc,
+                    remarks: ''
+                });
+                existing.add(key);
+                added++;
+            });
+        }
+
+        if (added) saveToLocal();
+    }
 
     function init() {
         buildSignatureSelect($checkedBySelect);
@@ -1154,15 +1231,16 @@
     }
 
     function normalizeCategoriesForRoom(room) {
-        const disallowed = new Set(['附註', '備注', '備註']);
         const out = [];
         (room.categories || []).forEach(rawCat => {
-            if (disallowed.has(rawCat)) return;
+            if (['備注', '備註'].includes(rawCat)) return;
             if (room.name === '廳露台' && ['玻璃趟門', '窗', '趟門和窗'].includes(rawCat)) return;
             if (room.name === '客廳連廚房' && ['腳線及地板', '腳線及地磚', '門'].includes(rawCat)) return;
             const cat = normalizeCategoryName(rawCat);
+            if (cat === '備注' || cat === '備註') return;
             if (!out.includes(cat)) out.push(cat);
         });
+        if (!out.includes('附註')) out.push('附註');
         return out;
     }
 
@@ -1180,7 +1258,7 @@
         if (!name) return;
         const trimmed = name.trim();
         if (!trimmed) return;
-        if (['附註', '備注', '備註'].includes(trimmed)) { showToast('⚠️ Step 2 不使用備註選項'); return; }
+        if (['備注', '備註'].includes(trimmed)) { showToast('⚠️ Step 2 請使用「附註」類別'); return; }
         const room = rooms.find(r => r.id === selectedRoomId);
         if (!room) return;
         if (room.categories.includes(trimmed)) { showToast('⚠️ 此類別已存在 This category already exists'); return; }
@@ -1199,6 +1277,7 @@
     function getFullTemplateArray(cat) {
         if (!cat) return [];
         const key = TEMPLATE_LOOKUP_ALIASES[cat] || cat;
+        if (key === '附註' || cat === '附註') return categoryTemplates['附註'] ? categoryTemplates['附註'].slice() : NOTE_STEP3_OPTIONS.slice();
         if (categoryTemplates[key]) return categoryTemplates[key].concat(GLOBAL_DEFECT_TEMPLATES);
         if (categoryTemplates[cat]) return categoryTemplates[cat].concat(GLOBAL_DEFECT_TEMPLATES);
         for (const k of Object.keys(categoryTemplates)) {
@@ -1297,6 +1376,10 @@
     }
 
     function getWorkPartsForCategory(cat) {
+        const key = TEMPLATE_LOOKUP_ALIASES[cat] || cat;
+        if (key === '附註' || cat === '附註') {
+            return applyCategoryStepTextRules('附註', NOTE_STEP3_OPTIONS.slice(), 'work');
+        }
         const raw = getFullTemplateArray(cat);
         const seen = new Set();
         const out = [];
@@ -1314,6 +1397,8 @@
     }
 
     function getSuggestionPartsForCategory(cat) {
+        const key = TEMPLATE_LOOKUP_ALIASES[cat] || cat;
+        if (key === '附註' || cat === '附註') return [];
         const raw = getFullTemplateArray(cat);
         const seen = new Set();
         const out = [];
