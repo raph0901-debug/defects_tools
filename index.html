@@ -597,9 +597,10 @@
             '掃口有罅，要填補',
             '內門框不貼／門頂飾板有隙，要修理及加固',
             '有虛位，要調校或加裝膠笠',
-            '門眼斜／生鏽／不清，要重裝／更換／清理',
+            '門眼斜／生鏽／門眼不清，要重裝／更換／清理',
             '門身污／底爛，要清潔／修補',
-            '門柄鬆／鎖舌撞鎖片，要加固／調校',
+            '門柄鬆，要加固／調校',
+            '鎖舌撞鎖片，要調校',
             '門邊大細隙／刮地板／關門太快，要修理',
             '門鎖花／底木面有孔，要更換／填補',
             '門彎，建議更換',
@@ -739,6 +740,30 @@
 
     const TEMPLATE_LOOKUP_ALIASES = {
         '腳線及地板': '腳線及地磚', '批蕩': '批盪', '橱櫃': '厨櫃', '櫥櫃': '厨櫃'
+    };
+
+    /** Step 2 類別：步驟三／四選項篩選（依 UI 編號對應之文案） */
+    const CATEGORY_STEP_TEXT_RULES = {
+        '批盪': {
+            step3Allow: ['暫沒有必收項目', '天花有空批盪', '牆身有空批盪'],
+            step4Allow: ['建議拆卸及重做', '要拆卸及重做']
+        },
+        '油漆': {
+            step3Allow: ['部分牆身及天花不平滑及有污漬'],
+            step4Allow: ['要拆卸及重做']
+        },
+        '鋪磚': {
+            step3Deny: ['孔', '不平滑'],
+            step4Deny: ['建議拆卸及重做']
+        },
+        '大門': {
+            step3Deny: ['天花有空批盪', '牆身有空批盪'],
+            step4Deny: ['建議更換', '建議拆卸及重做']
+        },
+        '櫃': {
+            step3Deny: ['層板', '玻璃', '天花有空批盪', '牆身有空批盪'],
+            step4Deny: ['建議拆卸及重做']
+        }
     };
 
     const STORAGE_KEY = 'cw_defects_report_v4';
@@ -1245,6 +1270,32 @@
         return out;
     }
 
+    function applyCategoryStepTextRules(cat, parts, stepKind) {
+        const key = TEMPLATE_LOOKUP_ALIASES[cat] || cat;
+        const rules = CATEGORY_STEP_TEXT_RULES[key] || CATEGORY_STEP_TEXT_RULES[cat];
+        if (!rules) return parts;
+        if (stepKind === 'work') {
+            if (rules.step3Allow) {
+                const allow = new Set(rules.step3Allow);
+                return parts.filter(p => allow.has(p));
+            }
+            if (rules.step3Deny) {
+                const deny = new Set(rules.step3Deny);
+                return parts.filter(p => !deny.has(p));
+            }
+        } else {
+            if (rules.step4Allow) {
+                const allow = new Set(rules.step4Allow);
+                return parts.filter(p => allow.has(p));
+            }
+            if (rules.step4Deny) {
+                const deny = new Set(rules.step4Deny);
+                return parts.filter(p => !deny.has(p));
+            }
+        }
+        return parts;
+    }
+
     function getWorkPartsForCategory(cat) {
         const raw = getFullTemplateArray(cat);
         const seen = new Set();
@@ -1259,7 +1310,7 @@
                 if (!seen.has(w)) { seen.add(w); out.push(w); }
             });
         });
-        return out;
+        return applyCategoryStepTextRules(cat, out, 'work');
     }
 
     function getSuggestionPartsForCategory(cat) {
@@ -1275,7 +1326,7 @@
                 out.push(s);
             });
         });
-        return out;
+        return applyCategoryStepTextRules(cat, out, 'suggestion');
     }
 
     /** 由步驟三、四已選模板組成自訂描述欄位應顯示之內容（與 addDefect 預設一致） */
