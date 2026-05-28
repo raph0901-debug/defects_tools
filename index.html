@@ -217,7 +217,27 @@
         .template-item .tmpl-check { color: var(--success); font-weight: 700; flex-shrink: 0; display: none; }
         .template-item.selected .tmpl-check { display: inline; }
 
-        #reportPanel { color: #000; font-family: PMingLiU, '新細明體', serif; }
+        #reportPanel,
+        #reportPanel table,
+        #reportPanel th,
+        #reportPanel td,
+        #reportPanel .print-report-header,
+        #reportPanel .signature-area,
+        #reportPanel .sig-label,
+        #reportPanel .badge {
+            color: #000;
+            font-family: PMingLiU, MingLiU, '新細明體', serif;
+        }
+        .report-brand-header {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        .report-brand-logo {
+            display: block;
+            width: min(320px, 92%);
+            height: auto;
+        }
         #reportPanel .print-only, #reportPanel .signature-area, #reportPanel .sig-label { color: #000; }
         .report-table-wrap {
             overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 8px;
@@ -289,6 +309,15 @@
 
         @media print {
             body { background: #fff; font-size: 12px; color: #000; }
+            #reportPanel,
+            #reportPanel table,
+            #reportPanel th,
+            #reportPanel td,
+            #reportPanel .print-report-header,
+            #reportPanel .signature-area,
+            #reportPanel .sig-label {
+                font-family: PMingLiU, MingLiU, '新細明體', serif !important;
+            }
             .app-header, .workflow-tabs, .main-container .card:first-child, .btn, .toast, .no-print,
             .col-actions, .chip-group, .template-list, .modal-overlay, .form-row, .collapsible-toggle,
             .header-actions, .card-header .badge { display: none !important; }
@@ -300,8 +329,7 @@
             .report-table-wrap { border: none; overflow-x: visible; }
             .print-only { display: block !important; }
             .print-report-header { color: #000 !important; margin-bottom: 12px; }
-            .print-cow-name { font-size: 11pt; }
-            .print-engineer-line { font-size: 9.5pt; color: #000 !important; margin-bottom: 3px; }
+            .report-brand-logo { width: 300px; max-width: 48%; }
             .print-defects-title { font-size: 13pt; margin-bottom: 10px; }
             .print-meta-block { font-size: 10.5pt; }
             .print-meta-label { font-weight: 700; }
@@ -312,9 +340,7 @@
         }
         .print-only { display: none; }
         .print-report-header { color: var(--text); }
-        .print-cow-name { font-size: 0.95rem; font-weight: 700; letter-spacing: 0.04em; text-align: center; margin-bottom: 2px; }
-        .print-engineer-line { font-size: 0.78rem; text-align: center; color: var(--text-secondary); margin-bottom: 4px; }
-        .print-defects-title { font-size: 1.05rem; font-weight: 700; text-align: center; margin-bottom: 12px; }
+        .print-defects-title { font-size: 1.05rem; font-weight: 700; margin: 10px 0 12px; }
         .print-meta-block { font-size: 0.82rem; line-height: 1.55; max-width: 100%; }
         .print-meta-line { margin: 2px 0; }
         .print-meta-label { font-weight: 700; color: var(--text); }
@@ -431,9 +457,11 @@
             </div>
         </div>
 
+        <div class="report-brand-header">
+            <img class="report-brand-logo" src="assets/cow-logo.svg" alt="Clerk of Works Services Limited — 工程監督師">
+        </div>
+
         <div class="print-only print-report-header">
-            <div class="print-cow-name">Clerk of Works Services Limited</div>
-            <div class="print-engineer-line">工程監督師</div>
             <div class="print-defects-title">Defects List</div>
             <div class="print-meta-block">
                 <div class="print-meta-line"><span class="print-meta-label">Address:</span> <span id="printAddr"></span></div>
@@ -1240,7 +1268,9 @@
             if (cat === '備注' || cat === '備註') return;
             if (!out.includes(cat)) out.push(cat);
         });
-        if (!out.includes('附註')) out.push('附註');
+        const noteAt = out.indexOf('附註');
+        if (noteAt >= 0) out.splice(noteAt, 1);
+        out.push('附註');
         return out;
     }
 
@@ -1513,12 +1543,33 @@
             if (d.remarks) g.rems.push(d.remarks);
             g.ids.push(d.id);
         });
-        const groups = Array.from(map.values()).sort((a,b) =>
-            (getReportRoomOrder(a) - getReportRoomOrder(b)) ||
-            ((rooms.find(r=>r.id===a.roomId)?.categories.indexOf(a.categoryName)||0) -
-             (rooms.find(r=>r.id===b.roomId)?.categories.indexOf(b.categoryName)||0)) ||
-            (a.descs[0] || '').localeCompare(b.descs[0] || '', 'zh-HK')
-        );
+        function getReportCategorySortIndex(room, categoryName) {
+            if (!room) return 9999;
+            const cats = normalizeCategoriesForRoom(room);
+            if (categoryName === '附註') return cats.length + 100;
+            const idx = cats.indexOf(categoryName);
+            return idx >= 0 ? idx : cats.length + 50;
+        }
+        function getReportDescriptionSortKey(g) {
+            const desc = (g.descs[0] || '').trim();
+            if (g.categoryName === '附註') {
+                const noteIdx = NOTE_STEP3_OPTIONS.indexOf(desc);
+                return noteIdx >= 0 ? noteIdx : 999;
+            }
+            return desc;
+        }
+        const groups = Array.from(map.values()).sort((a,b) => {
+            const roomCmp = getReportRoomOrder(a) - getReportRoomOrder(b);
+            if (roomCmp) return roomCmp;
+            const roomA = rooms.find(r => r.id === a.roomId);
+            const roomB = rooms.find(r => r.id === b.roomId);
+            const catCmp = getReportCategorySortIndex(roomA, a.categoryName) - getReportCategorySortIndex(roomB, b.categoryName);
+            if (catCmp) return catCmp;
+            const descA = getReportDescriptionSortKey(a);
+            const descB = getReportDescriptionSortKey(b);
+            if (typeof descA === 'number' && typeof descB === 'number') return descA - descB;
+            return String(descA).localeCompare(String(descB), 'zh-HK');
+        });
         function roomRowSpan(startIdx) {
             const rid = groups[startIdx].roomId;
             let n = 0;
