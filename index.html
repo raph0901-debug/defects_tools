@@ -548,6 +548,7 @@
 <script>
 (function() {
     const DEFAULT_ROOMS = [
+        { id: 14, name: '客廳', categories: ['批盪','油漆','腳線','地板','鋪磚','大門','櫃','石材','趟門和窗','電及家電','假天花'] },
         { id: 1, name: '客廳連廚房', categories: ['批盪','油漆','腳線','地板','鋪磚','大門','櫃','厨櫃','潔具及來去水','石材','趟門和窗','電及家電','假天花'] },
         { id: 2, name: '廳露台', categories: ['鋪磚','欄杆','來去水','外牆','石材','電及家電','其他'] },
         { id: 3, name: '廳邊客房', categories: ['批盪','油漆','門','腳線及地磚','趟門和窗','石材','電及家電'] },
@@ -569,7 +570,7 @@
         'Jessica TSIM Yuen Ting, MHKPBIA, CPSI, BEAM Pro (NB)',
         'S.T. Chow HKIA, RIBA, AP'
     ];
-    const REPORT_ROOM_ORDER = ['客廳連廚房', '廚房', '廳露台', '廳邊客房', '主人房'];
+    const REPORT_ROOM_ORDER = ['客廳', '客廳連廚房', '廚房', '廳露台', '廳邊客房', '主人房'];
 
     const NOTE_TEMPLATES = [
         '全屋空調不在檢查範圍內',
@@ -870,7 +871,6 @@
 
     function looksLikeOldDefaultRoomSet(savedRooms) {
         return Array.isArray(savedRooms) &&
-            savedRooms.length === DEFAULT_ROOMS.length &&
             DEFAULT_ROOMS.every(defaultRoom => savedRooms.some(room => room && room.id === defaultRoom.id && room.name === defaultRoom.name));
     }
 
@@ -1567,6 +1567,7 @@
         const groups = Array.from(map.values()).sort((a,b) => {
             const roomCmp = getReportRoomOrder(a) - getReportRoomOrder(b);
             if (roomCmp) return roomCmp;
+            if (a.roomId !== b.roomId) return (a.roomId ?? 0) - (b.roomId ?? 0);
             const roomA = rooms.find(r => r.id === a.roomId);
             const roomB = rooms.find(r => r.id === b.roomId);
             const catCmp = getReportCategorySortIndex(roomA, a.categoryName) - getReportCategorySortIndex(roomB, b.categoryName);
