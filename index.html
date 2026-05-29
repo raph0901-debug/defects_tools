@@ -914,6 +914,7 @@
             });
         }
         if (Array.isArray(data.defects)) defects = data.defects;
+        if (rooms.length) seedProjectDefaultDefects();
         if (typeof data.addr === 'string') $addrInput.value = data.addr;
         if (typeof data.client === 'string') $clientInput.value = data.client;
         if (typeof data.date === 'string') $dateInput.value = data.date;
@@ -1202,6 +1203,7 @@
         rooms.push(...addRooms.map(r => JSON.parse(JSON.stringify(r))));
         if (!selectedRoomId) selectedRoomId = rooms[0].id;
         pendingRoomIds = [];
+        seedProjectDefaultDefects();
         renderAll();
         saveToLocal();
         showToast('✅ 已加入房間');
@@ -1556,14 +1558,7 @@
         return rooms.find(r => normalizeRoomId(r.id) === key);
     }
 
-    function renderReportTable() {
-        if (!defects.length) {
-            $reportBody.innerHTML = `<tr class="empty-state"><td colspan="6">📭 尚未添加任何缺陷項目 No defects added yet</td></tr>`;
-            $defectCount.textContent = '0 項 / 0 items';
-            return;
-        }
-        const roomIdsInReport = new Set(defects.map(d => normalizeRoomId(d.roomId)));
-        $defectCount.textContent = defects.length + ' 項 · ' + roomIdsInReport.size + ' 個房間 / ' + defects.length + ' items · ' + roomIdsInReport.size + ' rooms';
+    function buildReportGroups() {
         const roomOrder = {};
         rooms.forEach((r, i) => { roomOrder[normalizeRoomId(r.id)] = i; });
         function getReportRoomOrder(g) {
@@ -1584,7 +1579,8 @@
                     categoryName: d.categoryName,
                     descs: [],
                     rems: [],
-                    ids: []
+                    ids: [],
+                    placeholder: false
                 });
             }
             const g = map.get(k);
@@ -1592,8 +1588,23 @@
             if (d.remarks) g.rems.push(d.remarks);
             g.ids.push(d.id);
         });
+        const coveredRoomIds = new Set(Array.from(map.values()).map(g => normalizeRoomId(g.roomId)));
+        rooms.forEach(room => {
+            const key = normalizeRoomId(room.id);
+            if (coveredRoomIds.has(key)) return;
+            map.set('placeholder:' + key, {
+                roomId: room.id,
+                roomName: room.name,
+                categoryName: '—',
+                descs: ['（此房間尚未加入缺陷項目）'],
+                rems: [],
+                ids: [],
+                placeholder: true
+            });
+        });
         function getReportCategorySortIndex(room, categoryName) {
             if (!room) return 9999;
+            if (categoryName === '—') return 9998;
             const cats = normalizeCategoriesForRoom(room);
             if (categoryName === '附註') return cats.length + 100;
             const idx = cats.indexOf(categoryName);
@@ -1607,7 +1618,7 @@
             }
             return desc;
         }
-        const groups = Array.from(map.values()).sort((a, b) => {
+        return Array.from(map.values()).sort((a, b) => {
             const roomCmp = getReportRoomOrder(a) - getReportRoomOrder(b);
             if (roomCmp) return roomCmp;
             if (!sameReportRoom(a.roomId, b.roomId)) {
@@ -1622,6 +1633,23 @@
             if (typeof descA === 'number' && typeof descB === 'number') return descA - descB;
             return String(descA).localeCompare(String(descB), 'zh-HK');
         });
+    }
+
+    function renderReportTable() {
+        if (!rooms.length && !defects.length) {
+            $reportBody.innerHTML = `<tr class="empty-state"><td colspan="6">📭 尚未添加任何缺陷項目 No defects added yet</td></tr>`;
+            $defectCount.textContent = '0 項 / 0 items';
+            return;
+        }
+        const groups = buildReportGroups();
+        const roomIdsInReport = new Set(groups.map(g => normalizeRoomId(g.roomId)));
+        $defectCount.textContent =
+            '項目 ' + rooms.length + ' 房間 · ' + defects.length + ' 項 · 報告顯示 ' + roomIdsInReport.size + ' 房間 / ' +
+            rooms.length + ' rooms · ' + defects.length + ' items · ' + roomIdsInReport.size + ' in report';
+        if (!groups.length) {
+            $reportBody.innerHTML = `<tr class="empty-state"><td colspan="6">📭 尚未添加任何缺陷項目 No defects added yet</td></tr>`;
+            return;
+        }
         let curRoomKey = null;
         let rSeq = 0;
         let cSeq = 0;
@@ -1664,19 +1692,24 @@
 
             const actionsTd = document.createElement('td');
             actionsTd.className = 'col-actions no-print';
-            const editBtn = document.createElement('button');
-            editBtn.type = 'button';
-            editBtn.className = 'btn btn-ghost btn-sm btn-icon';
-            editBtn.title = '修改';
-            editBtn.textContent = '✎';
-            editBtn.addEventListener('click', () => editDefectGroup(g.ids.join(',')));
-            const delBtn = document.createElement('button');
-            delBtn.type = 'button';
-            delBtn.className = 'btn btn-danger btn-sm btn-icon';
-            delBtn.title = '刪除';
-            delBtn.textContent = '✕';
-            delBtn.addEventListener('click', () => deleteDefectGroup(g.ids.join(',')));
-            actionsTd.append(editBtn, delBtn);
+            if (g.placeholder) {
+                actionsTd.textContent = '—';
+                tr.classList.add('report-placeholder-row');
+            } else {
+                const editBtn = document.createElement('button');
+                editBtn.type = 'button';
+                editBtn.className = 'btn btn-ghost btn-sm btn-icon';
+                editBtn.title = '修改';
+                editBtn.textContent = '✎';
+                editBtn.addEventListener('click', () => editDefectGroup(g.ids.join(',')));
+                const delBtn = document.createElement('button');
+                delBtn.type = 'button';
+                delBtn.className = 'btn btn-danger btn-sm btn-icon';
+                delBtn.title = '刪除';
+                delBtn.textContent = '✕';
+                delBtn.addEventListener('click', () => deleteDefectGroup(g.ids.join(',')));
+                actionsTd.append(editBtn, delBtn);
+            }
             tr.appendChild(actionsTd);
 
             frag.appendChild(tr);
