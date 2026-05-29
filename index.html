@@ -146,14 +146,16 @@
                 align-items: start;
                 gap: 14px;
             }
-            .main-container.entry-mode #inputPanel,
-            .main-container.entry-mode #reportPanel {
+            .main-container.entry-mode #inputPanel {
                 max-height: calc(100vh - 118px);
                 overflow: auto;
             }
             .main-container.entry-mode #reportPanel {
+                max-height: none;
+                overflow: visible;
                 position: sticky;
                 top: 98px;
+                align-self: start;
             }
         }
 
@@ -240,7 +242,10 @@
         }
         #reportPanel .print-only, #reportPanel .signature-area, #reportPanel .sig-label { color: #000; }
         .report-table-wrap {
-            overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 8px;
+            overflow-x: auto;
+            overflow-y: visible;
+            -webkit-overflow-scrolling: touch;
+            margin-top: 8px;
             border-radius: var(--radius-sm); border: 1px solid #000;
         }
         table.report-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 600px; }
@@ -323,10 +328,23 @@
             .header-actions, .card-header .badge { display: none !important; }
             .main-container { display: block !important; max-width: 100%; padding: 0; gap: 0; }
             .card { box-shadow: none; border: none; padding: 0; margin-bottom: 20px; break-inside: avoid; }
-            table.report-table { font-size: 12pt; min-width: auto; width: 100%; border: 1px solid #000; }
+            #reportPanel,
+            .main-container.entry-mode #reportPanel {
+                max-height: none !important;
+                overflow: visible !important;
+                position: static !important;
+                height: auto !important;
+            }
+            #reportPanel.card { break-inside: auto; page-break-inside: auto; }
+            table.report-table { font-size: 12pt; min-width: auto; width: 100%; border: 1px solid #000; page-break-inside: auto; }
+            table.report-table tr { break-inside: avoid; page-break-inside: avoid; }
             table.report-table th { background: #eee; color: #000; border-bottom: 2px solid #000; font-size: 12pt; }
             table.report-table th, table.report-table td { padding: 4px 6px; border: 1px solid #000; font-size: 12pt; line-height: 1.2; color: #000; }
-            .report-table-wrap { border: none; overflow-x: visible; }
+            .report-table-wrap {
+                border: none;
+                overflow: visible !important;
+                max-height: none !important;
+            }
             .print-only { display: block !important; }
             .print-report-header { color: #000 !important; margin-bottom: 12px; }
             .report-brand-logo { width: 300px; max-width: 48%; }
@@ -1544,7 +1562,8 @@
             $defectCount.textContent = '0 項 / 0 items';
             return;
         }
-        $defectCount.textContent = defects.length + ' 項 / ' + defects.length + ' items';
+        const roomIdsInReport = new Set(defects.map(d => normalizeRoomId(d.roomId)));
+        $defectCount.textContent = defects.length + ' 項 · ' + roomIdsInReport.size + ' 個房間 / ' + defects.length + ' items · ' + roomIdsInReport.size + ' rooms';
         const roomOrder = {};
         rooms.forEach((r, i) => { roomOrder[normalizeRoomId(r.id)] = i; });
         function getReportRoomOrder(g) {
@@ -1606,7 +1625,9 @@
         let curRoomKey = null;
         let rSeq = 0;
         let cSeq = 0;
-        $reportBody.innerHTML = groups.map((g) => {
+        $reportBody.replaceChildren();
+        const frag = document.createDocumentFragment();
+        groups.forEach((g) => {
             const roomKey = normalizeRoomId(g.roomId);
             if (roomKey !== curRoomKey) {
                 curRoomKey = roomKey;
@@ -1615,18 +1636,52 @@
             }
             cSeq++;
             const item = rSeq + '.' + cSeq;
-            return `<tr data-ids="${g.ids.join(',')}" data-item="${item}">
-                <td class="col-item">${item}</td>
-                <td class="col-position">${escapeHtml(g.roomName)}</td>
-                <td class="col-category">${escapeHtml(g.categoryName)}</td>
-                <td class="col-desc">${escapeHtml([...new Set(g.descs.map(s => String(s || '').trim()))].join('\n')).replace(/\n/g,'<br>')}</td>
-                <td class="col-remarks">${escapeHtml(g.rems.join('; '))}</td>
-                <td class="col-actions no-print">
-                    <button type="button" class="btn btn-ghost btn-sm btn-icon" title="修改" onclick="editDefectGroup('${g.ids.join(',')}')">✎</button>
-                    <button type="button" class="btn btn-danger btn-sm btn-icon" title="刪除" onclick="deleteDefectGroup('${g.ids.join(',')}')">✕</button>
-                </td>
-            </tr>`;
-        }).join('');
+            const tr = document.createElement('tr');
+            tr.dataset.ids = g.ids.join(',');
+            tr.dataset.item = item;
+
+            const descText = [...new Set(g.descs.map(s => String(s || '').trim()))].join('\n');
+            const cells = [
+                { cls: 'col-item', text: item },
+                { cls: 'col-position', text: g.roomName },
+                { cls: 'col-category', text: g.categoryName },
+                { cls: 'col-desc', text: descText, multiline: true },
+                { cls: 'col-remarks', text: g.rems.join('; ') }
+            ];
+            cells.forEach(({ cls, text, multiline }) => {
+                const td = document.createElement('td');
+                td.className = cls;
+                if (multiline && text.includes('\n')) {
+                    text.split('\n').forEach((line, idx) => {
+                        if (idx) td.appendChild(document.createElement('br'));
+                        td.appendChild(document.createTextNode(line));
+                    });
+                } else {
+                    td.textContent = text;
+                }
+                tr.appendChild(td);
+            });
+
+            const actionsTd = document.createElement('td');
+            actionsTd.className = 'col-actions no-print';
+            const editBtn = document.createElement('button');
+            editBtn.type = 'button';
+            editBtn.className = 'btn btn-ghost btn-sm btn-icon';
+            editBtn.title = '修改';
+            editBtn.textContent = '✎';
+            editBtn.addEventListener('click', () => editDefectGroup(g.ids.join(',')));
+            const delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.className = 'btn btn-danger btn-sm btn-icon';
+            delBtn.title = '刪除';
+            delBtn.textContent = '✕';
+            delBtn.addEventListener('click', () => deleteDefectGroup(g.ids.join(',')));
+            actionsTd.append(editBtn, delBtn);
+            tr.appendChild(actionsTd);
+
+            frag.appendChild(tr);
+        });
+        $reportBody.appendChild(frag);
     }
 
     window.editDefectGroup = function(idsStr) {
