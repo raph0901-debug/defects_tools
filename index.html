@@ -588,6 +588,7 @@
         { id: 8, name: '廳右邊房', categories: ['批盪','油漆','門','腳線及地磚','窗','石材','鋪磚','電及家電'] },
         { id: 9, name: '中間房', categories: ['批盪','油漆','門','腳線及地磚','窗','石材','鋪磚','電及家電'] },
         { id: 10, name: '廚房', categories: ['批盪','油漆','腳線','腳線及地磚','鋪磚','門','厨櫃','潔具及來去水','石材','窗','電及家電','假天花'] },
+        { id: 15, name: '工人房', categories: ['批盪','油漆','門','腳線及地磚','窗','石材','電及家電'] },
         { id: 11, name: '工作平台', categories: ['鋪磚','欄杆','來去水','外牆','石材','電及家電','窗','其他'] },
         { id: 12, name: '工人廁', categories: ['鋪磚','門','窗','石材','浴室櫃','潔具及來去水','電及家電','批盪','油漆','假天花'] },
         { id: 13, name: '主人浴室', categories: ['鋪磚','門','窗','石材','浴室櫃','潔具及來去水','電及家電','批盪','油漆','假天花'] }
@@ -599,7 +600,8 @@
         'Jessica TSIM Yuen Ting, MHKPBIA, CPSI, BEAM Pro (NB)',
         'S.T. Chow HKIA, RIBA, AP'
     ];
-    const REPORT_ROOM_ORDER = ['客廳', '客廳連廚房', '廚房', '廳露台', '廳邊客房', '主人房'];
+    // Report room display order (default). Users can still reorder via ↑/↓.
+    const REPORT_ROOM_ORDER = ['客廳','廳露台','廳邊房','中間房','主人房','主人浴室','浴室','廚房','工人房','工人廁','工作平台'];
 
     const NOTE_TEMPLATES = [
         '全屋空調不在檢查範圍內',
@@ -1086,11 +1088,38 @@
         return false;
     }
 
+    function getRoomOrderKey(name) {
+        const n = String(name || '').trim();
+        if (!n) return '';
+        if (n.includes('工作平台')) return '工作平台';
+        if (n.includes('工人廁')) return '工人廁';
+        if (n.includes('工人房')) return '工人房';
+        if (n.includes('廚房')) return '廚房';
+        if (n.includes('主人浴室')) return '主人浴室';
+        if (n === '浴室' || (n.includes('浴室') && !n.includes('主人'))) return '浴室';
+        if (n.includes('主人房')) return '主人房';
+        if (n.includes('中間房')) return '中間房';
+        if (n.includes('廳露台')) return '廳露台';
+        if (n.includes('廳邊')) return '廳邊房';
+        if (n.includes('客廳')) return '客廳';
+        return n;
+    }
+
+    function getPreferredRoomOrderIndex(roomName) {
+        const key = getRoomOrderKey(roomName);
+        const idx = REPORT_ROOM_ORDER.indexOf(key);
+        return idx >= 0 ? idx : 999;
+    }
+
     function ensureRoomReportOrders() {
+        // Only assign defaults for rooms that don't already have an explicit order.
         rooms.forEach((room, idx) => {
-            if (typeof room.reportOrder !== 'number') room.reportOrder = idx;
+            if (typeof room.reportOrder === 'number') return;
+            const pref = getPreferredRoomOrderIndex(room && room.name);
+            room.reportOrder = pref * 100 + idx;
         });
         rooms.sort((a, b) => (a.reportOrder ?? 0) - (b.reportOrder ?? 0));
+        rooms.forEach((r, i) => { r.reportOrder = i; });
     }
 
     function roomHasCategory(room, cat) {
@@ -1655,7 +1684,7 @@
         const roomOrder = {};
         rooms.forEach((r) => { roomOrder[normalizeRoomId(r.id)] = r.reportOrder ?? 0; });
         function getReportRoomOrder(g) {
-            const namedOrder = REPORT_ROOM_ORDER.indexOf(g.roomName);
+            const namedOrder = REPORT_ROOM_ORDER.indexOf(getRoomOrderKey(g.roomName));
             if (namedOrder >= 0) return namedOrder;
             const idx = roomOrder[normalizeRoomId(g.roomId)];
             if (idx !== undefined) return REPORT_ROOM_ORDER.length + idx;
