@@ -259,9 +259,11 @@
         .report-table thead tr.subhead th { background: #f3f0eb; font-size: 12px; padding-top: 6px; padding-bottom: 6px; }
         .th-position-group { text-align: center; }
         .col-position { width: 130px; font-weight: 700; font-size: 12px; }
-        .col-position[rowspan] { vertical-align: middle; }
         .col-category { width: 118px; font-weight: 600; }
-        .col-category[rowspan] { vertical-align: middle; }
+        .report-room-header-row td { font-weight: 700; }
+        .report-room-header-row .col-desc,
+        .report-room-header-row .col-remarks,
+        .report-room-header-row .col-category { font-weight: 400; }
         .col-desc { min-width: 200px; }
         .col-remarks { width: 110px; color: #000; font-style: italic; }
         .col-actions { width: 96px; text-align: center; white-space: nowrap; }
@@ -1698,16 +1700,17 @@
                     roomId: d.roomId,
                     roomName: d.roomName,
                     categoryName: d.categoryName,
-                    descs: [],
-                    rems: [],
+                    items: [],
                     ids: [],
                     placeholder: false
                 });
             }
             const g = map.get(k);
-            const desc = (d.description || '').trim();
-            if (desc && !g.descs.includes(desc)) g.descs.push(desc);
-            if (d.remarks) g.rems.push(d.remarks);
+            g.items.push({
+                id: d.id,
+                description: d.description,
+                remarks: d.remarks
+            });
             g.ids.push(d.id);
         });
         const coveredRoomIds = new Set(Array.from(map.values()).map(g => normalizeRoomId(g.roomId)));
@@ -1718,8 +1721,12 @@
                 roomId: room.id,
                 roomName: room.name,
                 categoryName: '—',
-                descs: ['（此房間尚未加入缺陷項目）'],
-                rems: [],
+                items: [{
+                    id: null,
+                    description: '（此房間尚未加入缺陷項目）',
+                    remarks: '',
+                    placeholder: true
+                }],
                 ids: [],
                 placeholder: true
             });
@@ -1733,7 +1740,7 @@
             return idx >= 0 ? idx : cats.length + 50;
         }
         function getReportDescriptionSortKey(g) {
-            const desc = (g.descs[0] || '').trim();
+            const desc = (g.items[0]?.description || '').trim();
             if (g.categoryName === '附註') {
                 const noteIdx = NOTE_STEP3_OPTIONS.indexOf(desc);
                 return noteIdx >= 0 ? noteIdx : 999;
@@ -1757,6 +1764,36 @@
         });
     }
 
+    function buildReportRows(groups) {
+        const rows = [];
+        let curRoomKey = null;
+        let rSeq = 0;
+        let cSeq = 0;
+        groups.forEach(g => {
+            const roomKey = normalizeRoomId(g.roomId);
+            if (roomKey !== curRoomKey) {
+                curRoomKey = roomKey;
+                rSeq++;
+                cSeq = 0;
+                rows.push({ type: 'room', roomSeq: rSeq, roomName: g.roomName });
+            }
+            cSeq++;
+            const itemNum = rSeq + '.' + cSeq;
+            g.items.forEach((item, idx) => {
+                rows.push({
+                    type: idx === 0 ? 'category-first' : 'category-cont',
+                    item: itemNum,
+                    categoryName: g.categoryName,
+                    description: item.description,
+                    remarks: item.remarks,
+                    id: item.id,
+                    placeholder: g.placeholder || item.placeholder
+                });
+            });
+        });
+        return rows;
+    }
+
     function renderReportTable() {
         if (!rooms.length && !defects.length) {
             $reportBody.innerHTML = `<tr class="empty-state"><td colspan="6">📭 尚未添加任何缺陷項目 No defects added yet</td></tr>`;
@@ -1772,74 +1809,68 @@
             $reportBody.innerHTML = `<tr class="empty-state"><td colspan="6">📭 尚未添加任何缺陷項目 No defects added yet</td></tr>`;
             return;
         }
-        let curRoomKey = null;
-        let rSeq = 0;
-        let cSeq = 0;
+        const rows = buildReportRows(groups);
         $reportBody.replaceChildren();
         const frag = document.createDocumentFragment();
-        groups.forEach((g) => {
-            const roomKey = normalizeRoomId(g.roomId);
-            if (roomKey !== curRoomKey) {
-                curRoomKey = roomKey;
-                rSeq++;
-                cSeq = 0;
-            }
-            cSeq++;
-            const descLines = [...new Set(g.descs.map(s => String(s || '').trim()).filter(Boolean))];
-            const item = descLines.length > 1
-                ? (rSeq + '.1–' + rSeq + '.' + descLines.length)
-                : (rSeq + '.' + cSeq);
+        rows.forEach(row => {
             const tr = document.createElement('tr');
-            tr.dataset.ids = g.ids.join(',');
-            tr.dataset.item = item;
-
-            const descText = descLines.map((line, i) => {
-                if (descLines.length <= 1) return line;
-                return rSeq + '.' + (i + 1) + ' ' + line;
-            }).join('\n');
-            const cells = [
-                { cls: 'col-item', text: item },
-                { cls: 'col-position', text: g.roomName },
-                { cls: 'col-category', text: g.categoryName },
-                { cls: 'col-desc', text: descText, multiline: true },
-                { cls: 'col-remarks', text: g.rems.join('; ') }
-            ];
-            cells.forEach(({ cls, text, multiline }) => {
-                const td = document.createElement('td');
-                td.className = cls;
-                if (multiline && text.includes('\n')) {
-                    text.split('\n').forEach((line, idx) => {
-                        if (idx) td.appendChild(document.createElement('br'));
-                        td.appendChild(document.createTextNode(line));
-                    });
-                } else {
+            if (row.type === 'room') {
+                tr.className = 'report-room-header-row';
+                tr.dataset.type = 'room';
+                [
+                    { cls: 'col-item', text: String(row.roomSeq) },
+                    { cls: 'col-position', text: row.roomName },
+                    { cls: 'col-category', text: '' },
+                    { cls: 'col-desc', text: '' },
+                    { cls: 'col-remarks', text: '' }
+                ].forEach(({ cls, text }) => {
+                    const td = document.createElement('td');
+                    td.className = cls;
                     td.textContent = text;
-                }
-                tr.appendChild(td);
-            });
-
-            const actionsTd = document.createElement('td');
-            actionsTd.className = 'col-actions no-print';
-            if (g.placeholder) {
-                actionsTd.textContent = '—';
-                tr.classList.add('report-placeholder-row');
+                    tr.appendChild(td);
+                });
+                const actionsTd = document.createElement('td');
+                actionsTd.className = 'col-actions no-print';
+                tr.appendChild(actionsTd);
             } else {
-                const editBtn = document.createElement('button');
-                editBtn.type = 'button';
-                editBtn.className = 'btn btn-ghost btn-sm btn-icon';
-                editBtn.title = '修改';
-                editBtn.textContent = '✎';
-                editBtn.addEventListener('click', () => editDefectGroup(g.ids.join(',')));
-                const delBtn = document.createElement('button');
-                delBtn.type = 'button';
-                delBtn.className = 'btn btn-danger btn-sm btn-icon';
-                delBtn.title = '刪除';
-                delBtn.textContent = '✕';
-                delBtn.addEventListener('click', () => deleteDefectGroup(g.ids.join(',')));
-                actionsTd.append(editBtn, delBtn);
+                if (row.type === 'category-cont') tr.classList.add('report-cat-continuation-row');
+                if (row.placeholder) tr.classList.add('report-placeholder-row');
+                tr.classList.add('report-defect-row');
+                if (row.id) tr.dataset.ids = String(row.id);
+                tr.dataset.item = row.item;
+                [
+                    { cls: 'col-item', text: row.type === 'category-first' ? row.item : '' },
+                    { cls: 'col-position', text: '' },
+                    { cls: 'col-category', text: row.type === 'category-first' ? row.categoryName : '' },
+                    { cls: 'col-desc', text: row.description || '' },
+                    { cls: 'col-remarks', text: row.remarks || '' }
+                ].forEach(({ cls, text }) => {
+                    const td = document.createElement('td');
+                    td.className = cls;
+                    td.textContent = text;
+                    tr.appendChild(td);
+                });
+                const actionsTd = document.createElement('td');
+                actionsTd.className = 'col-actions no-print';
+                if (row.placeholder) {
+                    actionsTd.textContent = '—';
+                } else {
+                    const editBtn = document.createElement('button');
+                    editBtn.type = 'button';
+                    editBtn.className = 'btn btn-ghost btn-sm btn-icon';
+                    editBtn.title = '修改';
+                    editBtn.textContent = '✎';
+                    editBtn.addEventListener('click', () => editDefectGroup(String(row.id)));
+                    const delBtn = document.createElement('button');
+                    delBtn.type = 'button';
+                    delBtn.className = 'btn btn-danger btn-sm btn-icon';
+                    delBtn.title = '刪除';
+                    delBtn.textContent = '✕';
+                    delBtn.addEventListener('click', () => deleteDefectGroup(String(row.id)));
+                    actionsTd.append(editBtn, delBtn);
+                }
+                tr.appendChild(actionsTd);
             }
-            tr.appendChild(actionsTd);
-
             frag.appendChild(tr);
         });
         $reportBody.appendChild(frag);
@@ -1936,22 +1967,29 @@
         document.querySelectorAll('#reportBody tr').forEach(row => {
             if (row.classList.contains('empty-state')) return;
             const c = row.cells;
-            let item, room, cat, descCell, remCell;
-            if (c.length >= 6) {
-                item = c[0].textContent; room = c[1].textContent; cat = c[2].textContent;
-                descCell = c[3]; remCell = c[4];
-                lastRoomForCopy = room;
-                lastCatForCopy = cat;
-            } else if (c.length === 5) {
-                item = c[0].textContent; room = lastRoomForCopy; cat = c[1].textContent;
-                descCell = c[2]; remCell = c[3];
-                lastCatForCopy = cat;
-            } else if (c.length === 4) {
-                item = c[0].textContent; room = lastRoomForCopy; cat = lastCatForCopy;
-                descCell = c[1]; remCell = c[2];
-            } else return;
-            text += `[${item}] ${room} - ${cat}\n${descCell.innerHTML.replace(/<br>/g,'\n')}\n`;
-            if (remCell.textContent) text += '  備註 Remarks: ' + remCell.textContent + '\n';
+            if (c.length < 6) return;
+            const item = c[0].textContent.trim();
+            const room = c[1].textContent.trim();
+            const cat = c[2].textContent.trim();
+            const desc = c[3].textContent.trim();
+            const rem = c[4].textContent.trim();
+            if (row.classList.contains('report-room-header-row')) {
+                if (room) lastRoomForCopy = room;
+                lastCatForCopy = '';
+                text += `[${item}] ${room}\n`;
+                return;
+            }
+            const roomLabel = room || lastRoomForCopy;
+            const catLabel = cat || lastCatForCopy;
+            if (room) lastRoomForCopy = room;
+            if (cat) lastCatForCopy = cat;
+            if (!desc) return;
+            if (item && cat) {
+                text += `[${item}] ${catLabel}\n${desc}\n`;
+            } else {
+                text += `${desc}\n`;
+            }
+            if (rem) text += '  備註 Remarks: ' + rem + '\n';
         });
         navigator.clipboard.writeText(text).then(()=>showToast('📋 已複製')).catch(()=>showToast('⚠️ 複製失敗'));
     };
