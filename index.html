@@ -260,6 +260,19 @@
         .th-position-group { text-align: center; }
         .col-position { width: 130px; font-weight: 700; font-size: 12px; }
         .col-category { width: 118px; font-weight: 600; }
+        .report-category-select {
+            width: 100%;
+            max-width: 118px;
+            font-size: 12px;
+            font-family: inherit;
+            font-weight: 600;
+            border: 1px solid #bbb;
+            border-radius: 4px;
+            padding: 3px 4px;
+            background: #fff;
+            color: #000;
+        }
+        .report-category-select:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px var(--accent-light); }
         .report-room-header-row td { font-weight: 700; }
         .report-room-header-row .col-desc,
         .report-room-header-row .col-remarks,
@@ -565,6 +578,8 @@
 <div id="editGroupModal" class="modal-overlay no-print" aria-hidden="true">
     <div class="modal-card card">
         <h3 style="margin-bottom:12px;font-size:1.05rem;">修改報告項目 Edit report row</h3>
+        <label class="proj-label">類別 Category</label>
+        <select id="editGroupCategory" style="margin-bottom:10px;"></select>
         <label class="proj-label">工程描述 Description of work</label>
         <textarea id="editGroupDesc" rows="10" style="margin-bottom:10px;"></textarea>
         <label class="proj-label">備註 Remarks</label>
@@ -1782,6 +1797,7 @@
             g.items.forEach((item, idx) => {
                 rows.push({
                     type: idx === 0 ? 'category-first' : 'category-cont',
+                    roomId: g.roomId,
                     item: itemNum,
                     categoryName: g.categoryName,
                     description: item.description,
@@ -1792,6 +1808,76 @@
             });
         });
         return rows;
+    }
+
+    function getReportCategoryOptions(roomId, currentCategory) {
+        const room = findProjectRoom(roomId);
+        const options = room ? [...normalizeCategoriesForRoom(room)] : [...GENERIC_CATEGORIES];
+        if (currentCategory && !options.includes(currentCategory)) options.unshift(currentCategory);
+        return options;
+    }
+
+    function fillCategorySelect(select, roomId, currentCategory) {
+        select.replaceChildren();
+        getReportCategoryOptions(roomId, currentCategory).forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat;
+            opt.textContent = cat;
+            if (cat === currentCategory) opt.selected = true;
+            select.appendChild(opt);
+        });
+        const customOpt = document.createElement('option');
+        customOpt.value = '__custom__';
+        customOpt.textContent = '＋ 自訂類別…';
+        select.appendChild(customOpt);
+    }
+
+    function applyDefectCategoryChange(defectId, categoryName) {
+        const trimmed = (categoryName || '').trim();
+        if (!trimmed || ['備注', '備註'].includes(trimmed)) {
+            showToast('⚠️ 請選擇有效類別');
+            return false;
+        }
+        const defect = defects.find(d => d.id === defectId);
+        if (!defect || defect.categoryName === trimmed) return false;
+        defect.categoryName = trimmed;
+        renderReportTable();
+        saveToLocal();
+        showToast('✅ 類別已更新 Category updated');
+        return true;
+    }
+
+    function createReportCategoryCell(roomId, defectId, categoryName) {
+        const td = document.createElement('td');
+        td.className = 'col-category';
+        const printLabel = document.createElement('span');
+        printLabel.className = 'print-only';
+        printLabel.textContent = categoryName;
+        td.appendChild(printLabel);
+        const select = document.createElement('select');
+        select.className = 'report-category-select no-print';
+        select.title = '修改類別 Change category';
+        fillCategorySelect(select, roomId, categoryName);
+        select.addEventListener('change', () => {
+            if (select.value === '__custom__') {
+                const name = prompt('請輸入自訂類別名稱：\nEnter custom category name:');
+                if (!name || !name.trim()) {
+                    select.value = categoryName;
+                    return;
+                }
+                const trimmed = name.trim();
+                if (['備注', '備註'].includes(trimmed)) {
+                    showToast('⚠️ 請使用「附註」類別');
+                    select.value = categoryName;
+                    return;
+                }
+                if (!applyDefectCategoryChange(defectId, trimmed)) select.value = categoryName;
+                return;
+            }
+            if (!applyDefectCategoryChange(defectId, select.value)) select.value = categoryName;
+        });
+        td.appendChild(select);
+        return td;
     }
 
     function renderReportTable() {
@@ -1838,18 +1924,29 @@
                 tr.classList.add('report-defect-row');
                 if (row.id) tr.dataset.ids = String(row.id);
                 tr.dataset.item = row.item;
-                [
-                    { cls: 'col-item', text: row.type === 'category-first' ? row.item : '' },
-                    { cls: 'col-position', text: '' },
-                    { cls: 'col-category', text: row.type === 'category-first' ? row.categoryName : '' },
-                    { cls: 'col-desc', text: row.description || '' },
-                    { cls: 'col-remarks', text: row.remarks || '' }
-                ].forEach(({ cls, text }) => {
-                    const td = document.createElement('td');
-                    td.className = cls;
-                    td.textContent = text;
-                    tr.appendChild(td);
-                });
+                const itemTd = document.createElement('td');
+                itemTd.className = 'col-item';
+                itemTd.textContent = row.type === 'category-first' ? row.item : '';
+                tr.appendChild(itemTd);
+                const posTd = document.createElement('td');
+                posTd.className = 'col-position';
+                tr.appendChild(posTd);
+                if (row.type === 'category-first' && !row.placeholder && row.id) {
+                    tr.appendChild(createReportCategoryCell(row.roomId, row.id, row.categoryName));
+                } else {
+                    const catTd = document.createElement('td');
+                    catTd.className = 'col-category';
+                    catTd.textContent = row.type === 'category-first' ? (row.categoryName || '') : '';
+                    tr.appendChild(catTd);
+                }
+                const descTd = document.createElement('td');
+                descTd.className = 'col-desc';
+                descTd.textContent = row.description || '';
+                tr.appendChild(descTd);
+                const remTd = document.createElement('td');
+                remTd.className = 'col-remarks';
+                remTd.textContent = row.remarks || '';
+                tr.appendChild(remTd);
                 const actionsTd = document.createElement('td');
                 actionsTd.className = 'col-actions no-print';
                 if (row.placeholder) {
@@ -1882,6 +1979,8 @@
         if (!grp.length) return;
         const descMerged = grp.map(d => d.description || '').join('\n').trim();
         const remMerged = grp.map(d => d.remarks).filter(Boolean).join('; ');
+        const catSelect = document.getElementById('editGroupCategory');
+        fillCategorySelect(catSelect, grp[0].roomId, grp[0].categoryName);
         document.getElementById('editGroupDesc').value = descMerged;
         document.getElementById('editGroupRemarks').value = remMerged;
         editGroupIds = idArr;
@@ -1903,15 +2002,34 @@
         if (!d0) { closeEditGroupModal(); return; }
         const desc = document.getElementById('editGroupDesc').value.trim();
         const rem = document.getElementById('editGroupRemarks').value.trim();
-        defects = defects.filter(d => !editGroupIds.includes(d.id));
-        defects.push({
-            id: Date.now(),
-            roomId: d0.roomId,
-            roomName: d0.roomName,
-            categoryName: d0.categoryName,
-            description: desc,
-            remarks: rem
-        });
+        let categoryName = document.getElementById('editGroupCategory').value.trim();
+        if (categoryName === '__custom__') {
+            const name = prompt('請輸入自訂類別名稱：\nEnter custom category name:');
+            if (!name || !name.trim()) return;
+            categoryName = name.trim();
+        }
+        if (!categoryName || ['備注', '備註'].includes(categoryName)) {
+            showToast('⚠️ 請選擇有效類別');
+            return;
+        }
+        if (editGroupIds.length === 1) {
+            const defect = defects.find(d => d.id === editGroupIds[0]);
+            if (defect) {
+                defect.categoryName = categoryName;
+                defect.description = desc;
+                defect.remarks = rem;
+            }
+        } else {
+            defects = defects.filter(d => !editGroupIds.includes(d.id));
+            defects.push({
+                id: Date.now(),
+                roomId: d0.roomId,
+                roomName: d0.roomName,
+                categoryName: categoryName,
+                description: desc,
+                remarks: rem
+            });
+        }
         closeEditGroupModal();
         renderReportTable();
         saveToLocal();
