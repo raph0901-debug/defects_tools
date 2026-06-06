@@ -232,9 +232,11 @@
         .report-table thead tr.subhead th { background: #f3f0eb; font-size: 12px; padding-top: 6px; padding-bottom: 6px; }
         .th-position-group { text-align: center; }
         .col-position { width: 130px; font-weight: 700; font-size: 12px; }
-        .col-position[rowspan] { vertical-align: middle; }
         .col-category { width: 118px; font-weight: 600; }
-        .col-category[rowspan] { vertical-align: middle; }
+        .report-room-header-row td { font-weight: 700; }
+        .report-room-header-row .col-desc,
+        .report-room-header-row .col-remarks,
+        .report-room-header-row .col-category { font-weight: 400; }
         .col-desc { min-width: 200px; }
         .col-remarks { width: 110px; color: #000; font-style: italic; }
         .col-actions { width: 96px; text-align: center; white-space: nowrap; }
@@ -1404,6 +1406,65 @@
         renderCatChips(); renderTemplateList(); renderSuggestionList(); renderRemarkPresetChips(); renderReportTable(); saveToLocal(); showToast('✅ 已添加 Added');
     };
 
+    function getReportRoomSortKey(roomId, roomName) {
+        const roomOrder = {};
+        rooms.forEach((r, i) => { roomOrder[r.id] = i; });
+        const namedOrder = REPORT_ROOM_ORDER.indexOf(roomName);
+        if (namedOrder >= 0) return namedOrder;
+        return REPORT_ROOM_ORDER.length + (roomOrder[roomId] ?? 999);
+    }
+
+    function getCategorySortIndex(roomId, categoryName) {
+        const rm = rooms.find(r => r.id === roomId);
+        const idx = rm?.categories.indexOf(categoryName);
+        return idx >= 0 ? idx : 999;
+    }
+
+    function buildReportRows() {
+        const sorted = [...defects].sort((a, b) =>
+            (getReportRoomSortKey(a.roomId, a.roomName) - getReportRoomSortKey(b.roomId, b.roomName)) ||
+            (getCategorySortIndex(a.roomId, a.categoryName) - getCategorySortIndex(b.roomId, b.categoryName)) ||
+            (a.description || '').localeCompare(b.description || '', 'zh-HK') ||
+            (a.id - b.id)
+        );
+        const roomGroups = [];
+        sorted.forEach(d => {
+            let rg = roomGroups.find(g => g.roomId === d.roomId);
+            if (!rg) {
+                rg = { roomId: d.roomId, roomName: d.roomName, categories: [] };
+                roomGroups.push(rg);
+            }
+            let cg = rg.categories.find(c => c.categoryName === d.categoryName);
+            if (!cg) {
+                cg = { categoryName: d.categoryName, items: [] };
+                rg.categories.push(cg);
+            }
+            cg.items.push(d);
+        });
+        const rows = [];
+        let rSeq = 0;
+        roomGroups.forEach(rg => {
+            rSeq++;
+            rows.push({ type: 'room', roomSeq: rSeq, roomName: rg.roomName });
+            let cSeq = 0;
+            rg.categories.forEach(cg => {
+                cSeq++;
+                const itemNum = rSeq + '.' + cSeq;
+                cg.items.forEach((d, idx) => {
+                    rows.push({
+                        type: idx === 0 ? 'category-first' : 'category-cont',
+                        item: itemNum,
+                        categoryName: cg.categoryName,
+                        description: d.description,
+                        remarks: d.remarks,
+                        id: d.id
+                    });
+                });
+            });
+        });
+        return rows;
+    }
+
     function renderReportTable() {
         if (!defects.length) {
             $reportBody.innerHTML = `<tr class="empty-state"><td colspan="6">📭 尚未添加任何缺陷項目 No defects added yet</td></tr>`;
@@ -1411,65 +1472,30 @@
             return;
         }
         $defectCount.textContent = defects.length + ' 項 / ' + defects.length + ' items';
-        const roomOrder = {};
-        rooms.forEach((r,i) => roomOrder[r.id] = i);
-        function getReportRoomOrder(g) {
-            const namedOrder = REPORT_ROOM_ORDER.indexOf(g.roomName);
-            if (namedOrder >= 0) return namedOrder;
-            return REPORT_ROOM_ORDER.length + (roomOrder[g.roomId] ?? 999);
-        }
-        const map = new Map();
-        defects.forEach(d => {
-            const descKey = (d.description || '').trim();
-            const k = d.roomId + '|||' + d.categoryName + '|||' + descKey;
-            if (!map.has(k)) map.set(k, { roomId:d.roomId, roomName:d.roomName, categoryName:d.categoryName, descs:[], rems:[], ids:[] });
-            const g = map.get(k);
-            g.descs.push(d.description);
-            if (d.remarks) g.rems.push(d.remarks);
-            g.ids.push(d.id);
-        });
-        const groups = Array.from(map.values()).sort((a,b) =>
-            (getReportRoomOrder(a) - getReportRoomOrder(b)) ||
-            ((rooms.find(r=>r.id===a.roomId)?.categories.indexOf(a.categoryName)||0) -
-             (rooms.find(r=>r.id===b.roomId)?.categories.indexOf(b.categoryName)||0)) ||
-            (a.descs[0] || '').localeCompare(b.descs[0] || '', 'zh-HK')
-        );
-        function roomRowSpan(startIdx) {
-            const rid = groups[startIdx].roomId;
-            let n = 0;
-            for (let j = startIdx; j < groups.length && groups[j].roomId === rid; j++) n++;
-            return n;
-        }
-        function roomCategoryRowSpan(startIdx) {
-            const rid = groups[startIdx].roomId;
-            const cat = groups[startIdx].categoryName;
-            let n = 0;
-            for (let j = startIdx; j < groups.length && groups[j].roomId === rid && groups[j].categoryName === cat; j++) n++;
-            return n;
-        }
-        let curRoom = null, rSeq = 0, cSeq = 0;
-        $reportBody.innerHTML = groups.map((g, i) => {
-            if (g.roomId !== curRoom) { curRoom = g.roomId; rSeq++; cSeq = 0; }
-            cSeq++;
-            const item = rSeq + '.' + cSeq;
-            const prev = i > 0 ? groups[i - 1] : null;
-            const isFirstOfRoom = i === 0 || !prev || prev.roomId !== g.roomId;
-            const isFirstOfRoomCategory = i === 0 || !prev || prev.roomId !== g.roomId || prev.categoryName !== g.categoryName;
-            const roomCell = isFirstOfRoom
-                ? `<td class="col-position" rowspan="${roomRowSpan(i)}">${escapeHtml(g.roomName)}</td>`
-                : '';
-            const categoryCell = isFirstOfRoomCategory
-                ? `<td class="col-category" rowspan="${roomCategoryRowSpan(i)}">${escapeHtml(g.categoryName)}</td>`
-                : '';
-            return `<tr data-ids="${g.ids.join(',')}" data-item="${item}">
-                <td class="col-item">${item}</td>
-                ${roomCell}
-                ${categoryCell}
-                <td class="col-desc">${escapeHtml([...new Set(g.descs.map(s => String(s || '').trim()))].join('\n')).replace(/\n/g,'<br>')}</td>
-                <td class="col-remarks">${escapeHtml(g.rems.join('; '))}</td>
+        const rows = buildReportRows();
+        $reportBody.innerHTML = rows.map(row => {
+            if (row.type === 'room') {
+                return `<tr class="report-room-header-row" data-type="room">
+                    <td class="col-item">${row.roomSeq}</td>
+                    <td class="col-position">${escapeHtml(row.roomName)}</td>
+                    <td class="col-category"></td>
+                    <td class="col-desc"></td>
+                    <td class="col-remarks"></td>
+                    <td class="col-actions no-print"></td>
+                </tr>`;
+            }
+            const contClass = row.type === 'category-cont' ? ' report-cat-continuation-row' : '';
+            const itemCell = row.type === 'category-first' ? escapeHtml(row.item) : '';
+            const catCell = row.type === 'category-first' ? escapeHtml(row.categoryName) : '';
+            return `<tr class="report-defect-row${contClass}" data-ids="${row.id}" data-item="${row.item}">
+                <td class="col-item">${itemCell}</td>
+                <td class="col-position"></td>
+                <td class="col-category">${catCell}</td>
+                <td class="col-desc">${escapeHtml(row.description || '')}</td>
+                <td class="col-remarks">${escapeHtml(row.remarks || '')}</td>
                 <td class="col-actions no-print">
-                    <button type="button" class="btn btn-ghost btn-sm btn-icon" title="修改" onclick="editDefectGroup('${g.ids.join(',')}')">✎</button>
-                    <button type="button" class="btn btn-danger btn-sm btn-icon" title="刪除" onclick="deleteDefectGroup('${g.ids.join(',')}')">✕</button>
+                    <button type="button" class="btn btn-ghost btn-sm btn-icon" title="修改" onclick="editDefectGroup('${row.id}')">✎</button>
+                    <button type="button" class="btn btn-danger btn-sm btn-icon" title="刪除" onclick="deleteDefectGroup('${row.id}')">✕</button>
                 </td>
             </tr>`;
         }).join('');
@@ -1566,22 +1592,29 @@
         document.querySelectorAll('#reportBody tr').forEach(row => {
             if (row.classList.contains('empty-state')) return;
             const c = row.cells;
-            let item, room, cat, descCell, remCell;
-            if (c.length >= 6) {
-                item = c[0].textContent; room = c[1].textContent; cat = c[2].textContent;
-                descCell = c[3]; remCell = c[4];
-                lastRoomForCopy = room;
-                lastCatForCopy = cat;
-            } else if (c.length === 5) {
-                item = c[0].textContent; room = lastRoomForCopy; cat = c[1].textContent;
-                descCell = c[2]; remCell = c[3];
-                lastCatForCopy = cat;
-            } else if (c.length === 4) {
-                item = c[0].textContent; room = lastRoomForCopy; cat = lastCatForCopy;
-                descCell = c[1]; remCell = c[2];
-            } else return;
-            text += `[${item}] ${room} - ${cat}\n${descCell.innerHTML.replace(/<br>/g,'\n')}\n`;
-            if (remCell.textContent) text += '  備註 Remarks: ' + remCell.textContent + '\n';
+            if (c.length < 6) return;
+            const item = c[0].textContent.trim();
+            const room = c[1].textContent.trim();
+            const cat = c[2].textContent.trim();
+            const desc = c[3].textContent.trim();
+            const rem = c[4].textContent.trim();
+            if (row.classList.contains('report-room-header-row')) {
+                if (room) lastRoomForCopy = room;
+                lastCatForCopy = '';
+                text += `[${item}] ${room}\n`;
+                return;
+            }
+            const roomLabel = room || lastRoomForCopy;
+            const catLabel = cat || lastCatForCopy;
+            if (room) lastRoomForCopy = room;
+            if (cat) lastCatForCopy = cat;
+            if (!desc) return;
+            if (item && cat) {
+                text += `[${item}] ${catLabel}\n${desc}\n`;
+            } else {
+                text += `${desc}\n`;
+            }
+            if (rem) text += '  備註 Remarks: ' + rem + '\n';
         });
         navigator.clipboard.writeText(text).then(()=>showToast('📋 已複製')).catch(()=>showToast('⚠️ 複製失敗'));
     };
