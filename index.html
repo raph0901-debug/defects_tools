@@ -279,8 +279,36 @@
         .report-room-header-row .col-category { font-weight: 400; }
         .col-desc { min-width: 200px; }
         .col-remarks { width: 110px; color: #000; font-style: italic; }
-        .col-actions { width: 96px; text-align: center; white-space: nowrap; }
-        .col-actions .btn-icon { margin: 0 2px; }
+        .col-actions { width: 128px; text-align: center; white-space: nowrap; }
+        .col-actions .btn-icon { margin: 0 1px; }
+        .report-room-spacer-row td {
+            height: 12px;
+            padding: 0;
+            line-height: 0;
+            font-size: 0;
+            border-top: none;
+            background: transparent;
+        }
+        .report-scroll-top {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            z-index: 450;
+            padding: 10px 14px;
+            border-radius: 24px;
+            border: 1.5px solid var(--border);
+            background: #fff;
+            color: var(--text);
+            font-size: 0.82rem;
+            font-weight: 700;
+            box-shadow: var(--shadow-lg);
+            cursor: pointer;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        .report-scroll-top.visible { opacity: 1; pointer-events: auto; }
+        .report-scroll-top:hover { transform: translateY(-2px); border-color: var(--accent); }
         #reportPanel .btn { color: #000; }
         table.report-table .btn-sm { font-size: 12px; }
         table.report-table .btn-icon { font-size: 12px; }
@@ -543,6 +571,8 @@
             </table>
         </div>
 
+        <button type="button" id="reportScrollTopBtn" class="report-scroll-top no-print" onclick="scrollReportToTop()" title="回到頁面頂部" aria-label="回到頁面頂部">↑ 頂部</button>
+
         <div class="no-print sig-select-row form-row" style="margin-top:14px;">
             <div>
                 <label class="proj-label">核對人 Checked by</label>
@@ -594,23 +624,24 @@
 <script>
 (function() {
     const DEFAULT_ROOMS = [
-        { id: 14, name: '客廳', categories: ['批盪','油漆','腳線','地板','鋪磚','大門','櫃','石材','趟門及窗','電及家電','假天花'] },
+        { id: 14, name: '客廳', categories: ['批盪','油漆','腳線','地板','鋪磚','大門','櫃','石材','趟門及窗','窗','電及家電','假天花'] },
         { id: 1, name: '客廳連廚房', categories: ['批盪','油漆','腳線','地板','鋪磚','大門','櫃','厨櫃','潔具及來去水','石材','窗','電及家電','假天花'] },
         { id: 2, name: '廳露台', categories: ['鋪磚','欄杆','來去水','外牆','石材','電及家電','假天花','鋁冚','其他'] },
         { id: 3, name: '廳邊客房', categories: ['批盪','油漆','門','腳線及地磚','窗','石材','電及家電'] },
-        { id: 4, name: '浴室', categories: ['鋪磚','門','窗','石材','浴室櫃','潔具及來去水','電及家電','批盪','油漆','假天花'] },
+        { id: 4, name: '浴室', categories: ['鋪磚','門','窗','石材','浴室櫃','潔具及來去水','電及家電','批盪','油漆','假天花','腳線及地板','腳線及地磚'] },
         { id: 5, name: '主人房', categories: ['批盪','油漆','門','腳線及地磚','窗','石材','鋪磚','外牆','電及家電'] },
         { id: 6, name: '廳邊雜物房', categories: ['批盪','油漆','門','腳線及地磚','窗','電及家電'] },
         { id: 7, name: '廳左邊房', categories: ['批盪','油漆','門','腳線及地磚','窗','石材','鋪磚','電及家電'] },
         { id: 8, name: '廳右邊房', categories: ['批盪','油漆','門','腳線及地磚','窗','石材','鋪磚','電及家電'] },
         { id: 9, name: '中間房', categories: ['批盪','油漆','門','腳線及地磚','窗','石材','鋪磚','電及家電'] },
-        { id: 10, name: '廚房', categories: ['批盪','油漆','腳線','腳線及地磚','鋪磚','門','厨櫃','潔具及來去水','石材','窗','電及家電','假天花'] },
+        { id: 10, name: '廚房', categories: ['批盪','油漆','腳線','腳線及地板','腳線及地磚','鋪磚','門','厨櫃','潔具及來去水','石材','窗','電及家電','假天花'] },
         { id: 15, name: '工人房', categories: ['批盪','油漆','門','腳線及地磚','窗','石材','電及家電'] },
         { id: 11, name: '工作平台', categories: ['鋪磚','欄杆','來去水','外牆','石材','電及家電','窗','其他'] },
-        { id: 12, name: '工人廁', categories: ['鋪磚','門','窗','石材','浴室櫃','潔具及來去水','電及家電','批盪','油漆','假天花'] },
-        { id: 13, name: '主人浴室', categories: ['鋪磚','門','窗','石材','浴室櫃','潔具及來去水','電及家電','批盪','油漆','假天花'] }
+        { id: 12, name: '工人廁', categories: ['鋪磚','門','窗','石材','浴室櫃','潔具及來去水','電及家電','批盪','油漆','假天花','腳線及地板','腳線及地磚'] },
+        { id: 13, name: '主人浴室', categories: ['鋪磚','門','窗','石材','浴室櫃','潔具及來去水','電及家電','批盪','油漆','假天花','腳線及地板','腳線及地磚'] }
     ];
-    const GENERIC_CATEGORIES = ['批盪','油漆','腳線','腳線及地磚','鋪磚','大門','門','櫃','窗','石材','電及家電','潔具及來去水','厨櫃','浴室櫃','欄杆','來去水','外牆','假天花','鋁冚','其他','附註'];
+    const GENERIC_CATEGORIES = ['批盪','油漆','腳線','腳線及地板','腳線及地磚','鋪磚','大門','門','櫃','窗','石材','電及家電','潔具及來去水','厨櫃','浴室櫃','欄杆','來去水','外牆','假天花','鋁冚','其他','附註'];
+    const DOOR_DEFAULT_DESC = '暫沒有必修項目';
     const REMARK_PRESETS = ['>300 x 300mm','<300 x 300mm','>1.2mm','<1.2mm','走廊範圍','設計範圍','外牆範圍','設計問題'];
     const SIGNATURE_NAMES = [
         'Tsang Ho Yin Harry MHKPBIA',
@@ -645,7 +676,7 @@
 
     const categoryTemplates = {
         '批盪': [
-            '暫沒有必修項目',
+            '暫沒有必收項目',
             '牆身／天花批盪不平滑／有裂紋，要重做／修補',
             '牆身斜，要重做／修補',
             '油漆起泡／滲水痕跡，要修理漏水',
@@ -675,7 +706,7 @@
             '地板污，要清潔'
         ],
         '地板': [
-            '地板鬆／響／斜／起級／發黑，要修理、加固或更換',
+            '地板鬆／響／斜／起級／發黑，要修理及加固',
             '空鼓，要加固',
             '地板污，要清潔'
         ],
@@ -683,7 +714,8 @@
             '掃口有罅／污／孔／不平滑，要填補／重做',
             '空鼓，要拆除及重做／加固',
             '唧膠不平滑／有滲水痕跡，要填補／重做',
-            '部分地磚污，要清潔'
+            '部分地磚污，要清潔',
+            '部分牆磚有隙及孔'
         ],
         '大門': [
             '門身、門框污，要修補及清潔',
@@ -725,7 +757,8 @@
             '沖廁制不順，要修理',
             '五金有漬，要清潔',
             '水龍頭／層架／座廁鬆，要加固或重裝',
-            '浴室有渠味，建議檢查及清潔'
+            '浴室有渠味，建議檢查及清潔',
+            '厠紙架鬆，要調教'
         ],
         '厨櫃': [
             '櫃門斜／開門撞板，要調校／安裝膠粒',
@@ -750,7 +783,8 @@
         '石材': [
             '暫沒有必修項目',
             '窗台石／門檻石裂／鬆／駁口明顯，要加固／修補或更換',
-            '崩花／花痕／唧膠有孔／氣泡／不平，建議重修／打磨／重做'
+            '崩花／花痕／唧膠有孔／氣泡／不平，建議重修／打磨／重做',
+            '部分石崩及有隙，要填補'
         ],
         '玻璃趟門': [
             '框膠／唧膠有氣泡、罅、孔／毛條爛／防水膠問題，要重做／更換／修補',
@@ -785,6 +819,7 @@
         ],
         '電及家電': [
             '暫沒有必修項目',
+            '冷氣底唧膠有隙，要填補',
             '抽油煙機推拉有刮聲／斜／不順，要清理／重裝／加潤滑',
             '電掣／插座斜／不貼牆／高低不平，要重裝／修理',
             '電掣鬆，要加固',
@@ -868,6 +903,9 @@
         '趟門及窗': { step3KeepFirstOnly: true },
         '窗': { step3KeepFirstOnly: true },
         '厨櫃': { step3KeepFirstOnly: true },
+        '潔具及來去水': {
+            step3DropIndices: [4, 7, 9, 10, 11, 14, 15]
+        },
         '附註': {
             step3Allow: NOTE_STEP3_OPTIONS.slice()
         }
@@ -1102,7 +1140,75 @@
         if (name.includes('露台')) return true;
         if (name === '廚房') return true;
         if (name.includes('浴室')) return true;
+        if (name === '工人廁') return true;
         return false;
+    }
+
+    function getDoorCategoryForRoom(room) {
+        const cats = normalizeCategoriesForRoom(room);
+        if (cats.includes('大門')) return '大門';
+        if (cats.includes('門')) return '門';
+        return null;
+    }
+
+    function nextDefectReportOrder(roomId) {
+        const key = normalizeRoomId(roomId);
+        return defects
+            .filter(d => normalizeRoomId(d.roomId) === key)
+            .reduce((max, d) => Math.max(max, typeof d.reportOrder === 'number' ? d.reportOrder : 0), 0) + 10;
+    }
+
+    function compareDefectsDefault(a, b) {
+        const roomA = findProjectRoom(a.roomId);
+        const roomB = findProjectRoom(b.roomId);
+        const catCmp = (() => {
+            const catsA = roomA ? normalizeCategoriesForRoom(roomA) : [];
+            const catsB = roomB ? normalizeCategoriesForRoom(roomB) : [];
+            const idxA = a.categoryName === '附註' ? catsA.length + 100 : catsA.indexOf(a.categoryName);
+            const idxB = b.categoryName === '附註' ? catsB.length + 100 : catsB.indexOf(b.categoryName);
+            return (idxA >= 0 ? idxA : 999) - (idxB >= 0 ? idxB : 999);
+        })();
+        if (catCmp) return catCmp;
+        if (a.categoryName === '附註' && b.categoryName === '附註') {
+            const noteA = NOTE_STEP3_OPTIONS.indexOf((a.description || '').trim());
+            const noteB = NOTE_STEP3_OPTIONS.indexOf((b.description || '').trim());
+            if (noteA >= 0 && noteB >= 0) return noteA - noteB;
+        }
+        const descCmp = String(a.description || '').localeCompare(String(b.description || ''), 'zh-HK');
+        if (descCmp) return descCmp;
+        return (a.id || 0) - (b.id || 0);
+    }
+
+    function ensureDefectReportOrders() {
+        const byRoom = new Map();
+        defects.forEach(d => {
+            const key = normalizeRoomId(d.roomId);
+            if (!byRoom.has(key)) byRoom.set(key, []);
+            byRoom.get(key).push(d);
+        });
+        byRoom.forEach(list => {
+            let maxOrder = list.reduce((max, d) => Math.max(max, typeof d.reportOrder === 'number' ? d.reportOrder : 0), 0);
+            const missing = list.filter(d => typeof d.reportOrder !== 'number');
+            if (!missing.length) return;
+            missing.sort(compareDefectsDefault);
+            missing.forEach(d => {
+                maxOrder += 10;
+                d.reportOrder = maxOrder;
+            });
+        });
+    }
+
+    function normalizeRoomId(id) {
+        return String(id ?? '');
+    }
+
+    function sameReportRoom(a, b) {
+        return normalizeRoomId(a) === normalizeRoomId(b);
+    }
+
+    function findProjectRoom(roomId) {
+        const key = normalizeRoomId(roomId);
+        return rooms.find(r => normalizeRoomId(r.id) === key);
     }
 
     function getRoomOrderKey(name) {
@@ -1156,50 +1262,53 @@
         return roomId + '|' + categoryName + '|' + String(description || '').trim();
     }
 
+    function pushDefaultDefect(room, categoryName, description, existing, nextIdRef) {
+        const key = defaultDefectKey(room.id, categoryName, description);
+        if (existing.has(key)) return false;
+        defects.push({
+            id: nextIdRef.value++,
+            roomId: room.id,
+            roomName: room.name,
+            categoryName: categoryName,
+            description: description,
+            remarks: '',
+            reportOrder: nextDefectReportOrder(room.id)
+        });
+        existing.add(key);
+        return true;
+    }
+
     function seedProjectDefaultDefects() {
         const existing = new Set(defects.map(d => defaultDefectKey(d.roomId, d.categoryName, d.description)));
         let added = 0;
-        let nextId = Date.now();
-
+        const nextIdRef = { value: Date.now() };
         const paintDesc = buildPaintDefaultDescription();
-        if (paintDesc) {
-            rooms.forEach(room => {
-                if (roomSkipsPaintDefault(room) || !roomHasCategory(room, '油漆')) return;
-                const key = defaultDefectKey(room.id, '油漆', paintDesc);
-                if (existing.has(key)) return;
-                defects.push({
-                    id: nextId++,
-                    roomId: room.id,
-                    roomName: room.name,
-                    categoryName: '油漆',
-                    description: paintDesc,
-                    remarks: ''
-                });
-                existing.add(key);
-                added++;
+
+        rooms.forEach(room => {
+            if (roomHasCategory(room, '批盪') && pushDefaultDefect(room, '批盪', OPT_NO_MANDATORY, existing, nextIdRef)) added++;
+            const doorCat = getDoorCategoryForRoom(room);
+            if (doorCat && pushDefaultDefect(room, doorCat, DOOR_DEFAULT_DESC, existing, nextIdRef)) added++;
+            if (paintDesc && !roomSkipsPaintDefault(room) && roomHasCategory(room, '油漆') && pushDefaultDefect(room, '油漆', paintDesc, existing, nextIdRef)) added++;
+        });
+
+        const livingRoom = rooms.find(r => r.name === LIVING_ROOM_NAME);
+        if (livingRoom) {
+            NOTE_STEP3_OPTIONS.forEach(desc => {
+                if (pushDefaultDefect(livingRoom, '附註', desc, existing, nextIdRef)) added++;
             });
         }
 
-        [LIVING_KITCHEN_ROOM_NAME, LIVING_ROOM_NAME].forEach(roomName => {
-            const room = rooms.find(r => r.name === roomName);
-            if (!room) return;
+        const livingKitchen = rooms.find(r => r.name === LIVING_KITCHEN_ROOM_NAME);
+        if (livingKitchen) {
             NOTE_STEP3_OPTIONS.forEach(desc => {
-                const key = defaultDefectKey(room.id, '附註', desc);
-                if (existing.has(key)) return;
-                defects.push({
-                    id: nextId++,
-                    roomId: room.id,
-                    roomName: room.name,
-                    categoryName: '附註',
-                    description: desc,
-                    remarks: ''
-                });
-                existing.add(key);
-                added++;
+                if (pushDefaultDefect(livingKitchen, '附註', desc, existing, nextIdRef)) added++;
             });
-        });
+        }
 
-        if (added) saveToLocal();
+        if (added) {
+            ensureDefectReportOrders();
+            saveToLocal();
+        }
     }
 
     function init() {
@@ -1222,6 +1331,12 @@
             if (e.key === 'Escape' && document.getElementById('editGroupModal').classList.contains('open')) { closeEditGroupModal(); return; }
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); addDefect(); }
         });
+        const scrollTopBtn = document.getElementById('reportScrollTopBtn');
+        if (scrollTopBtn) {
+            window.addEventListener('scroll', () => {
+                scrollTopBtn.classList.toggle('visible', window.scrollY > 280);
+            }, { passive: true });
+        }
     }
 
     window.toggleCollapse = function(trigger, contentId) {
@@ -1677,26 +1792,15 @@
             roomName: rm.name,
             categoryName: selectedCategoryName,
             description: finalDesc,
-            remarks: $remarksInput.value.trim()
+            remarks: $remarksInput.value.trim(),
+            reportOrder: nextDefectReportOrder(rm.id)
         });
         selectedTemplates = []; selectedSuggestionTemplates = []; selectedRemarkPresets = []; $customDesc.value = ''; $remarksInput.value = ''; selectedCategoryName = null;
         renderCatChips(); renderTemplateList(); renderSuggestionList(); renderRemarkPresetChips(); renderReportTable(); saveToLocal(); showToast('✅ 已添加 Added');
     };
 
-    function normalizeRoomId(id) {
-        return String(id ?? '');
-    }
-
-    function sameReportRoom(a, b) {
-        return normalizeRoomId(a) === normalizeRoomId(b);
-    }
-
-    function findProjectRoom(roomId) {
-        const key = normalizeRoomId(roomId);
-        return rooms.find(r => normalizeRoomId(r.id) === key);
-    }
-
     function buildReportGroups() {
+        ensureDefectReportOrders();
         ensureRoomReportOrders();
         const roomOrder = {};
         rooms.forEach((r) => { roomOrder[normalizeRoomId(r.id)] = r.reportOrder ?? 0; });
@@ -1728,6 +1832,19 @@
             });
             g.ids.push(d.id);
         });
+        map.forEach(g => {
+            g.items.sort((a, b) => {
+                const da = defects.find(x => x.id === a.id);
+                const db = defects.find(x => x.id === b.id);
+                return (da?.reportOrder ?? 0) - (db?.reportOrder ?? 0);
+            });
+        });
+        function groupMinReportOrder(g) {
+            return Math.min(...g.items.map(it => {
+                const d = defects.find(x => x.id === it.id);
+                return typeof d?.reportOrder === 'number' ? d.reportOrder : 999999;
+            }));
+        }
         const coveredRoomIds = new Set(Array.from(map.values()).map(g => normalizeRoomId(g.roomId)));
         rooms.forEach(room => {
             const key = normalizeRoomId(room.id);
@@ -1768,6 +1885,8 @@
             if (!sameReportRoom(a.roomId, b.roomId)) {
                 return normalizeRoomId(a.roomId).localeCompare(normalizeRoomId(b.roomId), undefined, { numeric: true });
             }
+            const orderCmp = groupMinReportOrder(a) - groupMinReportOrder(b);
+            if (orderCmp) return orderCmp;
             const roomA = findProjectRoom(a.roomId);
             const roomB = findProjectRoom(b.roomId);
             const catCmp = getReportCategorySortIndex(roomA, a.categoryName) - getReportCategorySortIndex(roomB, b.categoryName);
@@ -1787,6 +1906,7 @@
         groups.forEach(g => {
             const roomKey = normalizeRoomId(g.roomId);
             if (roomKey !== curRoomKey) {
+                if (curRoomKey !== null) rows.push({ type: 'spacer' });
                 curRoomKey = roomKey;
                 rSeq++;
                 cSeq = 0;
@@ -1900,6 +2020,16 @@
         const frag = document.createDocumentFragment();
         rows.forEach(row => {
             const tr = document.createElement('tr');
+            if (row.type === 'spacer') {
+                tr.className = 'report-room-spacer-row';
+                for (let i = 0; i < 6; i++) {
+                    const td = document.createElement('td');
+                    td.innerHTML = '&nbsp;';
+                    tr.appendChild(td);
+                }
+                frag.appendChild(tr);
+                return;
+            }
             if (row.type === 'room') {
                 tr.className = 'report-room-header-row';
                 tr.dataset.type = 'room';
@@ -1952,6 +2082,18 @@
                 if (row.placeholder) {
                     actionsTd.textContent = '—';
                 } else {
+                    const upBtn = document.createElement('button');
+                    upBtn.type = 'button';
+                    upBtn.className = 'btn btn-ghost btn-sm btn-icon';
+                    upBtn.title = '上移';
+                    upBtn.textContent = '↑';
+                    upBtn.addEventListener('click', () => moveDefectRow(row.id, 'up'));
+                    const downBtn = document.createElement('button');
+                    downBtn.type = 'button';
+                    downBtn.className = 'btn btn-ghost btn-sm btn-icon';
+                    downBtn.title = '下移';
+                    downBtn.textContent = '↓';
+                    downBtn.addEventListener('click', () => moveDefectRow(row.id, 'down'));
                     const editBtn = document.createElement('button');
                     editBtn.type = 'button';
                     editBtn.className = 'btn btn-ghost btn-sm btn-icon';
@@ -1964,7 +2106,7 @@
                     delBtn.title = '刪除';
                     delBtn.textContent = '✕';
                     delBtn.addEventListener('click', () => deleteDefectGroup(String(row.id)));
-                    actionsTd.append(editBtn, delBtn);
+                    actionsTd.append(upBtn, downBtn, editBtn, delBtn);
                 }
                 tr.appendChild(actionsTd);
             }
@@ -1972,6 +2114,30 @@
         });
         $reportBody.appendChild(frag);
     }
+
+    window.moveDefectRow = function(defectId, direction) {
+        ensureDefectReportOrders();
+        const defect = defects.find(d => d.id === defectId);
+        if (!defect) return;
+        const roomDefects = defects
+            .filter(d => sameReportRoom(d.roomId, defect.roomId))
+            .sort((a, b) => (a.reportOrder ?? 0) - (b.reportOrder ?? 0));
+        const idx = roomDefects.findIndex(d => d.id === defectId);
+        const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+        if (idx < 0 || swapIdx < 0 || swapIdx >= roomDefects.length) return;
+        const a = roomDefects[idx];
+        const b = roomDefects[swapIdx];
+        const tmp = a.reportOrder;
+        a.reportOrder = b.reportOrder;
+        b.reportOrder = tmp;
+        renderReportTable();
+        saveToLocal();
+        showToast(direction === 'up' ? '↑ 已上移' : '↓ 已下移');
+    };
+
+    window.scrollReportToTop = function() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
     window.editDefectGroup = function(idsStr) {
         const idArr = idsStr.split(',').map(Number).filter(Boolean);
@@ -2083,7 +2249,7 @@
         let lastRoomForCopy = '';
         let lastCatForCopy = '';
         document.querySelectorAll('#reportBody tr').forEach(row => {
-            if (row.classList.contains('empty-state')) return;
+            if (row.classList.contains('empty-state') || row.classList.contains('report-room-spacer-row')) return;
             const c = row.cells;
             if (c.length < 6) return;
             const item = c[0].textContent.trim();
