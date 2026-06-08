@@ -432,6 +432,8 @@
                 print-color-adjust: exact;
             }
             a[href*="github"], .github-corner, body::after { display: none !important; visibility: hidden !important; }
+            a[href]::after, a[href]::before { content: none !important; display: none !important; }
+            a[href] { color: #000 !important; text-decoration: none !important; }
             table.report-table th {
                 background: #eee;
                 color: #000;
@@ -1427,10 +1429,8 @@
         }
         window.addEventListener('beforeprint', () => {
             if (!isPrintLayout()) {
-                document.body.classList.add('print-layout');
-                syncPrintTableChrome();
+                setPrintLayout(true);
                 fillPrintMetaFields();
-                renderReportTable();
             }
         });
         window.addEventListener('afterprint', () => {
@@ -2394,10 +2394,76 @@
         return d + '/' + m + '/' + y;
     }
 
+    function buildPrintableReportHtml() {
+        const styleText = document.querySelector('style')?.textContent || '';
+        const panel = document.getElementById('reportPanel');
+        const clone = panel.cloneNode(true);
+        clone.querySelectorAll('.no-print').forEach(el => el.remove());
+        clone.querySelectorAll('a[href*="github"], .github-corner').forEach(el => el.remove());
+        clone.querySelectorAll('select.report-category-select').forEach(sel => {
+            const text = sel.options[sel.selectedIndex]?.textContent || sel.value || '';
+            const span = document.createElement('span');
+            span.textContent = text;
+            sel.replaceWith(span);
+        });
+        clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+        return `<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Defects List</title>
+<style>${styleText}</style>
+<style>
+body { margin: 0; padding: 0; background: #fff; color: #000; }
+body.print-layout .print-only { display: block !important; }
+body.print-layout .no-print,
+body.print-layout .col-actions,
+body.print-layout .report-scroll-top { display: none !important; }
+body.print-layout .signature-area { display: flex !important; }
+a[href*="github"], .github-corner { display: none !important; visibility: hidden !important; }
+a[href]::after, a[href]::before { content: none !important; }
+</style>
+</head>
+<body class="print-layout">${clone.outerHTML}</body>
+</html>`;
+    }
+
+    function printReportViaIframe() {
+        const html = buildPrintableReportHtml();
+        const iframe = document.createElement('iframe');
+        iframe.setAttribute('aria-hidden', 'true');
+        iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+        document.body.appendChild(iframe);
+        const win = iframe.contentWindow;
+        const doc = iframe.contentDocument || win.document;
+        doc.open();
+        doc.write(html);
+        doc.close();
+        let cleaned = false;
+        const cleanup = () => {
+            if (cleaned) return;
+            cleaned = true;
+            iframe.remove();
+            setPrintLayout(false);
+        };
+        win.addEventListener('afterprint', cleanup, { once: true });
+        setTimeout(() => {
+            try {
+                win.focus();
+                win.print();
+            } catch {
+                cleanup();
+                window.print();
+            }
+            setTimeout(cleanup, 4000);
+        }, 350);
+    }
+
     window.printReport = function() {
         setPrintLayout(true);
         fillPrintMetaFields();
-        window.print();
+        printReportViaIframe();
     };
 
     window.copyReportText = function() {
