@@ -358,7 +358,17 @@
         }
 
         @media print {
-            body { background: #fff; font-size: 12px; color: #000; }
+            html {
+                -webkit-text-size-adjust: 100%;
+                text-size-adjust: 100%;
+            }
+            body {
+                background: #fff;
+                font-size: 10px;
+                color: #000;
+                margin: 0;
+                padding: 0;
+            }
             #reportPanel,
             #reportPanel table,
             #reportPanel th,
@@ -370,9 +380,9 @@
             }
             .app-header, .workflow-tabs, .main-container .card:first-child, .btn, .toast, .no-print,
             .col-actions, .chip-group, .template-list, .modal-overlay, .form-row, .collapsible-toggle,
-            .header-actions, .card-header .badge { display: none !important; }
+            .header-actions, .card-header, #reportPanel > .card-header { display: none !important; }
             .main-container { display: block !important; max-width: 100%; padding: 0; gap: 0; }
-            .card { box-shadow: none; border: none; padding: 0; margin-bottom: 20px; break-inside: avoid; }
+            .card { box-shadow: none; border: none; padding: 0; margin-bottom: 12px; break-inside: auto; page-break-inside: auto; }
             #reportPanel,
             .main-container.entry-mode #reportPanel {
                 max-height: none !important;
@@ -381,34 +391,105 @@
                 height: auto !important;
             }
             #reportPanel.card { break-inside: auto; page-break-inside: auto; }
-            table.report-table { font-size: 12pt; min-width: auto; width: 100%; border: 1px solid #000; page-break-inside: auto; }
-            table.report-table { border-collapse: collapse; }
+            .report-brand-header { margin-bottom: 8px; }
+            .report-brand-logo { width: 220px; max-width: 42%; height: auto; }
+            table.report-table {
+                font-size: 10px;
+                min-width: 0;
+                width: 100%;
+                border: 1px solid #000;
+                border-collapse: collapse;
+                table-layout: fixed;
+                page-break-inside: auto;
+                break-inside: auto;
+            }
             table.report-table thead { display: table-header-group; }
-            table.report-table tr { break-inside: auto; page-break-inside: auto; }
-            table.report-table tr.report-placeholder-row { display: none; }
-            table.report-table td, table.report-table th {
+            table.report-table tbody.report-room-group {
+                break-inside: auto;
+                page-break-inside: auto;
+            }
+            table.report-table tr.report-placeholder-row,
+            table.report-table tr.report-room-spacer-row { display: none !important; }
+            table.report-table tr.report-defect-row,
+            table.report-table tr.report-room-header-row,
+            table.report-table tr.report-cat-continuation-row {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+            table.report-table tbody.report-room-group tr:last-child td {
+                border-bottom: 1px solid #000 !important;
+            }
+            table.report-table tr.report-room-header-row {
+                break-after: avoid;
+                page-break-after: avoid;
+            }
+            table.report-table td,
+            table.report-table th {
                 border: 1px solid #000 !important;
+                box-decoration-break: clone;
+                -webkit-box-decoration-break: clone;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
             a[href*="github"], .github-corner, body::after { display: none !important; visibility: hidden !important; }
-            table.report-table th { background: #eee; color: #000; border-bottom: 2px solid #000; font-size: 12pt; }
-            table.report-table th, table.report-table td { padding: 4px 6px; border: 1px solid #000; font-size: 12pt; line-height: 1.2; color: #000; }
+            table.report-table th {
+                background: #eee;
+                color: #000;
+                border-bottom: 2px solid #000;
+                font-size: 10px;
+                padding: 3px 5px;
+                line-height: 1.15;
+            }
+            table.report-table td {
+                padding: 3px 5px;
+                font-size: 10px;
+                line-height: 1.2;
+                color: #000;
+                word-wrap: break-word;
+                overflow-wrap: anywhere;
+            }
+            .col-item { width: 7%; }
+            .col-position { width: 12%; }
+            .col-category { width: 11%; }
+            .col-desc { width: auto; }
+            .col-remarks { width: 14%; }
             .report-table-wrap {
-                border: none;
+                border: 1px solid #000;
                 overflow: visible !important;
                 max-height: none !important;
+                break-inside: auto;
+                page-break-inside: auto;
             }
             .print-only { display: block !important; }
-            .print-report-header { color: #000 !important; margin-bottom: 12px; }
-            .report-brand-logo { width: 300px; max-width: 48%; }
-            .print-defects-title { font-size: 13pt; margin-bottom: 10px; }
-            .print-meta-block { font-size: 10.5pt; }
+            .print-report-header { color: #000 !important; margin-bottom: 8px; }
+            .print-defects-title { font-size: 11px; margin-bottom: 6px; }
+            .print-meta-block { font-size: 10px; line-height: 1.35; }
             .print-meta-label { font-weight: 700; }
-            .report-table thead tr.subhead th { background: #e8e8e8 !important; color: #000 !important; font-size: 12pt !important; }
-            table.report-table th .th-en { font-size: 12pt !important; }
+            .report-table thead tr.subhead th {
+                background: #e8e8e8 !important;
+                color: #000 !important;
+                font-size: 10px !important;
+            }
+            table.report-table th .th-en { font-size: 9px !important; }
             .report-table thead th.th-position-group { background: #eee !important; }
-            @page { margin: 15mm; size: A4; }
+            .signature-area .sig-label { font-size: 10px; }
+            @page { margin: 12mm; size: A4 portrait; }
+        }
+        @supports (-webkit-touch-callout: none) {
+            @media print {
+                table.report-table,
+                table.report-table th,
+                table.report-table td,
+                table.report-table th .th-en {
+                    font-size: 9px !important;
+                    line-height: 1.15 !important;
+                }
+                table.report-table th,
+                table.report-table td { padding: 2px 4px !important; }
+                .report-brand-logo { width: 180px; max-width: 38%; }
+                .print-defects-title { font-size: 10px !important; }
+                .print-meta-block { font-size: 9px !important; }
+            }
         }
         .print-only { display: none; }
         .print-report-header { color: var(--text); }
@@ -554,6 +635,14 @@
 
         <div class="report-table-wrap">
             <table class="report-table" id="reportTable">
+                <colgroup>
+                    <col class="col-item">
+                    <col class="col-position">
+                    <col class="col-category">
+                    <col class="col-desc">
+                    <col class="col-remarks">
+                    <col class="col-actions-col no-print">
+                </colgroup>
                 <thead>
                     <tr>
                         <th class="col-item" rowspan="2">Item<br><span class="th-en">編號</span></th>
@@ -567,7 +656,6 @@
                         <th class="col-category">Category<br><span class="th-en">類別</span></th>
                     </tr>
                 </thead>
-                <tbody id="reportBody"></tbody>
             </table>
         </div>
 
@@ -936,7 +1024,7 @@
     const $suggestionList = document.getElementById('suggestionList');
     const $customDesc = document.getElementById('customDesc');
     const $remarksInput = document.getElementById('remarksInput');
-    const $reportBody = document.getElementById('reportBody');
+    const $reportTable = document.getElementById('reportTable');
     const $defectCount = document.getElementById('defectCount');
     const $toast = document.getElementById('toast');
     const $addrInput = document.getElementById('addrInput');
@@ -1337,6 +1425,19 @@
                 scrollTopBtn.classList.toggle('visible', window.scrollY > 280);
             }, { passive: true });
         }
+        window.addEventListener('beforeprint', () => {
+            if (!isPrintLayout()) {
+                document.body.classList.add('print-layout');
+                syncPrintTableChrome();
+                fillPrintMetaFields();
+                renderReportTable();
+            }
+        });
+        window.addEventListener('afterprint', () => {
+            if (document.body.classList.contains('print-layout')) {
+                setPrintLayout(false);
+            }
+        });
     }
 
     window.toggleCollapse = function(trigger, contentId) {
@@ -2000,9 +2101,85 @@
         return td;
     }
 
+    function isPrintLayout() {
+        return document.body.classList.contains('print-layout');
+    }
+
+    function reportTableColSpan() {
+        return isPrintLayout() ? 5 : 6;
+    }
+
+    function appendReportActionsCell(tr, row) {
+        if (isPrintLayout()) return;
+        const actionsTd = document.createElement('td');
+        actionsTd.className = 'col-actions no-print';
+        if (row.placeholder) {
+            actionsTd.textContent = '—';
+        } else {
+            const upBtn = document.createElement('button');
+            upBtn.type = 'button';
+            upBtn.className = 'btn btn-ghost btn-sm btn-icon';
+            upBtn.title = '上移';
+            upBtn.textContent = '↑';
+            upBtn.addEventListener('click', () => moveDefectRow(row.id, 'up'));
+            const downBtn = document.createElement('button');
+            downBtn.type = 'button';
+            downBtn.className = 'btn btn-ghost btn-sm btn-icon';
+            downBtn.title = '下移';
+            downBtn.textContent = '↓';
+            downBtn.addEventListener('click', () => moveDefectRow(row.id, 'down'));
+            const editBtn = document.createElement('button');
+            editBtn.type = 'button';
+            editBtn.className = 'btn btn-ghost btn-sm btn-icon';
+            editBtn.title = '修改';
+            editBtn.textContent = '✎';
+            editBtn.addEventListener('click', () => editDefectGroup(String(row.id)));
+            const delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.className = 'btn btn-danger btn-sm btn-icon';
+            delBtn.title = '刪除';
+            delBtn.textContent = '✕';
+            delBtn.addEventListener('click', () => deleteDefectGroup(String(row.id)));
+            actionsTd.append(upBtn, downBtn, editBtn, delBtn);
+        }
+        tr.appendChild(actionsTd);
+    }
+
+    function syncPrintTableChrome() {
+        const forPrint = isPrintLayout();
+        const actionsCol = document.querySelector('#reportTable col.col-actions-col');
+        const actionsTh = document.querySelector('#reportTable thead .col-actions');
+        if (actionsCol) actionsCol.style.display = forPrint ? 'none' : '';
+        if (actionsTh) actionsTh.style.display = forPrint ? 'none' : '';
+    }
+
+    function setPrintLayout(enabled) {
+        document.body.classList.toggle('print-layout', enabled);
+        syncPrintTableChrome();
+        renderReportTable();
+    }
+
+    function fillPrintMetaFields() {
+        document.getElementById('printAddr').textContent = $addrInput.value || '—';
+        document.getElementById('printClient').textContent = $clientInput.value || '—';
+        document.getElementById('printDate').textContent = formatDateForPrint($dateInput.value);
+        document.getElementById('printWeather').textContent = $weatherInput.value || '—';
+        const chk = ($checkedBySelect.value || '').trim();
+        const end = ($endorsedBySelect.value || '').trim();
+        const blank = '____________________________';
+        document.getElementById('printSigChecked').textContent = chk || blank;
+        document.getElementById('printSigEndorsed').textContent = end || blank;
+    }
+
     function renderReportTable() {
+        syncPrintTableChrome();
+        const colspan = reportTableColSpan();
+        $reportTable.querySelectorAll('tbody').forEach(tb => tb.remove());
         if (!rooms.length && !defects.length) {
-            $reportBody.innerHTML = `<tr class="empty-state"><td colspan="6">📭 尚未添加任何缺陷項目 No defects added yet</td></tr>`;
+            const emptyBody = document.createElement('tbody');
+            emptyBody.id = 'reportBody';
+            emptyBody.innerHTML = `<tr class="empty-state"><td colspan="${colspan}">📭 尚未添加任何缺陷項目 No defects added yet</td></tr>`;
+            $reportTable.appendChild(emptyBody);
             $defectCount.textContent = '0 項 / 0 items';
             return;
         }
@@ -2012,25 +2189,39 @@
             '項目 ' + rooms.length + ' 房間 · ' + defects.length + ' 項 · 報告顯示 ' + roomIdsInReport.size + ' 房間 / ' +
             rooms.length + ' rooms · ' + defects.length + ' items · ' + roomIdsInReport.size + ' in report';
         if (!groups.length) {
-            $reportBody.innerHTML = `<tr class="empty-state"><td colspan="6">📭 尚未添加任何缺陷項目 No defects added yet</td></tr>`;
+            const emptyBody = document.createElement('tbody');
+            emptyBody.id = 'reportBody';
+            emptyBody.innerHTML = `<tr class="empty-state"><td colspan="${colspan}">📭 尚未添加任何缺陷項目 No defects added yet</td></tr>`;
+            $reportTable.appendChild(emptyBody);
             return;
         }
         const rows = buildReportRows(groups);
-        $reportBody.replaceChildren();
+        const forPrint = isPrintLayout();
         const frag = document.createDocumentFragment();
+        let roomTbody = null;
         rows.forEach(row => {
-            const tr = document.createElement('tr');
             if (row.type === 'spacer') {
+                if (forPrint) return;
+                const tr = document.createElement('tr');
                 tr.className = 'report-room-spacer-row';
-                for (let i = 0; i < 6; i++) {
+                for (let i = 0; i < colspan; i++) {
                     const td = document.createElement('td');
                     td.innerHTML = '&nbsp;';
                     tr.appendChild(td);
                 }
-                frag.appendChild(tr);
+                if (!roomTbody) {
+                    roomTbody = document.createElement('tbody');
+                    roomTbody.className = 'report-room-group';
+                    frag.appendChild(roomTbody);
+                }
+                roomTbody.appendChild(tr);
                 return;
             }
             if (row.type === 'room') {
+                roomTbody = document.createElement('tbody');
+                roomTbody.className = 'report-room-group';
+                frag.appendChild(roomTbody);
+                const tr = document.createElement('tr');
                 tr.className = 'report-room-header-row';
                 tr.dataset.type = 'room';
                 [
@@ -2045,74 +2236,52 @@
                     td.textContent = text;
                     tr.appendChild(td);
                 });
-                const actionsTd = document.createElement('td');
-                actionsTd.className = 'col-actions no-print';
-                tr.appendChild(actionsTd);
-            } else {
-                if (row.type === 'category-cont') tr.classList.add('report-cat-continuation-row');
-                if (row.placeholder) tr.classList.add('report-placeholder-row');
-                tr.classList.add('report-defect-row');
-                if (row.id) tr.dataset.ids = String(row.id);
-                tr.dataset.item = row.item;
-                const itemTd = document.createElement('td');
-                itemTd.className = 'col-item';
-                itemTd.textContent = row.type === 'category-first' ? row.item : '';
-                tr.appendChild(itemTd);
-                const posTd = document.createElement('td');
-                posTd.className = 'col-position';
-                tr.appendChild(posTd);
-                if (row.type === 'category-first' && !row.placeholder && row.id) {
-                    tr.appendChild(createReportCategoryCell(row.roomId, row.id, row.categoryName));
-                } else {
-                    const catTd = document.createElement('td');
-                    catTd.className = 'col-category';
-                    catTd.textContent = row.type === 'category-first' ? (row.categoryName || '') : '';
-                    tr.appendChild(catTd);
+                if (!forPrint) {
+                    const actionsTd = document.createElement('td');
+                    actionsTd.className = 'col-actions no-print';
+                    tr.appendChild(actionsTd);
                 }
-                const descTd = document.createElement('td');
-                descTd.className = 'col-desc';
-                descTd.textContent = row.description || '';
-                tr.appendChild(descTd);
-                const remTd = document.createElement('td');
-                remTd.className = 'col-remarks';
-                remTd.textContent = row.remarks || '';
-                tr.appendChild(remTd);
-                const actionsTd = document.createElement('td');
-                actionsTd.className = 'col-actions no-print';
-                if (row.placeholder) {
-                    actionsTd.textContent = '—';
-                } else {
-                    const upBtn = document.createElement('button');
-                    upBtn.type = 'button';
-                    upBtn.className = 'btn btn-ghost btn-sm btn-icon';
-                    upBtn.title = '上移';
-                    upBtn.textContent = '↑';
-                    upBtn.addEventListener('click', () => moveDefectRow(row.id, 'up'));
-                    const downBtn = document.createElement('button');
-                    downBtn.type = 'button';
-                    downBtn.className = 'btn btn-ghost btn-sm btn-icon';
-                    downBtn.title = '下移';
-                    downBtn.textContent = '↓';
-                    downBtn.addEventListener('click', () => moveDefectRow(row.id, 'down'));
-                    const editBtn = document.createElement('button');
-                    editBtn.type = 'button';
-                    editBtn.className = 'btn btn-ghost btn-sm btn-icon';
-                    editBtn.title = '修改';
-                    editBtn.textContent = '✎';
-                    editBtn.addEventListener('click', () => editDefectGroup(String(row.id)));
-                    const delBtn = document.createElement('button');
-                    delBtn.type = 'button';
-                    delBtn.className = 'btn btn-danger btn-sm btn-icon';
-                    delBtn.title = '刪除';
-                    delBtn.textContent = '✕';
-                    delBtn.addEventListener('click', () => deleteDefectGroup(String(row.id)));
-                    actionsTd.append(upBtn, downBtn, editBtn, delBtn);
-                }
-                tr.appendChild(actionsTd);
+                roomTbody.appendChild(tr);
+                return;
             }
-            frag.appendChild(tr);
+            if (!roomTbody) {
+                roomTbody = document.createElement('tbody');
+                roomTbody.className = 'report-room-group';
+                frag.appendChild(roomTbody);
+            }
+            const tr = document.createElement('tr');
+            if (row.type === 'category-cont') tr.classList.add('report-cat-continuation-row');
+            if (row.placeholder) tr.classList.add('report-placeholder-row');
+            tr.classList.add('report-defect-row');
+            if (row.id) tr.dataset.ids = String(row.id);
+            tr.dataset.item = row.item;
+            const itemTd = document.createElement('td');
+            itemTd.className = 'col-item';
+            itemTd.textContent = row.type === 'category-first' ? row.item : '';
+            tr.appendChild(itemTd);
+            const posTd = document.createElement('td');
+            posTd.className = 'col-position';
+            tr.appendChild(posTd);
+            if (row.type === 'category-first' && !row.placeholder && row.id && !forPrint) {
+                tr.appendChild(createReportCategoryCell(row.roomId, row.id, row.categoryName));
+            } else {
+                const catTd = document.createElement('td');
+                catTd.className = 'col-category';
+                catTd.textContent = row.type === 'category-first' ? (row.categoryName || '') : '';
+                tr.appendChild(catTd);
+            }
+            const descTd = document.createElement('td');
+            descTd.className = 'col-desc';
+            descTd.textContent = row.description || '';
+            tr.appendChild(descTd);
+            const remTd = document.createElement('td');
+            remTd.className = 'col-remarks';
+            remTd.textContent = row.remarks || '';
+            tr.appendChild(remTd);
+            appendReportActionsCell(tr, row);
+            roomTbody.appendChild(tr);
         });
-        $reportBody.appendChild(frag);
+        $reportTable.appendChild(frag);
     }
 
     window.moveDefectRow = function(defectId, direction) {
@@ -2226,16 +2395,8 @@
     }
 
     window.printReport = function() {
-        renderReportTable();
-        document.getElementById('printAddr').textContent = $addrInput.value || '—';
-        document.getElementById('printClient').textContent = $clientInput.value || '—';
-        document.getElementById('printDate').textContent = formatDateForPrint($dateInput.value);
-        document.getElementById('printWeather').textContent = $weatherInput.value || '—';
-        const chk = ($checkedBySelect.value || '').trim();
-        const end = ($endorsedBySelect.value || '').trim();
-        const blank = '____________________________';
-        document.getElementById('printSigChecked').textContent = chk || blank;
-        document.getElementById('printSigEndorsed').textContent = end || blank;
+        setPrintLayout(true);
+        fillPrintMetaFields();
         window.print();
     };
 
@@ -2248,10 +2409,10 @@
         text += 'Date of checking: ' + formatDateForPrint($dateInput.value) + '  Weather: ' + ($weatherInput.value||'—') + '\n';
         let lastRoomForCopy = '';
         let lastCatForCopy = '';
-        document.querySelectorAll('#reportBody tr').forEach(row => {
+        document.querySelectorAll('#reportTable tbody tr').forEach(row => {
             if (row.classList.contains('empty-state') || row.classList.contains('report-room-spacer-row')) return;
             const c = row.cells;
-            if (c.length < 6) return;
+            if (c.length < 5) return;
             const item = c[0].textContent.trim();
             const room = c[1].textContent.trim();
             const cat = c[2].textContent.trim();
