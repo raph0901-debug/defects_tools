@@ -208,18 +208,6 @@
 
         .template-list { display: flex; flex-wrap: wrap; gap: 8px; max-height: none; overflow: visible; padding-right: 0; }
         .template-chip { align-items: flex-start; border-radius: var(--radius-sm); white-space: normal; text-align: left; }
-        .template-item {
-            padding: 10px 14px; border-radius: var(--radius-sm); border: 1.5px solid var(--border);
-            cursor: pointer; font-size: 0.84rem; transition: var(--transition); background: #fafaf8;
-            color: var(--text); display: flex; align-items: flex-start; gap: 8px;
-        }
-        .template-item:hover { border-color: var(--accent); background: #fdfaf5; box-shadow: var(--shadow-sm); }
-        .template-item.selected { border-color: var(--accent); background: #fef9f0; box-shadow: inset 0 0 0 2px var(--accent-light); }
-        .template-item .tmpl-num { font-weight: 700; color: var(--accent); flex-shrink: 0; min-width: 22px; }
-        .template-item .tmpl-text { flex: 1; }
-        .template-item .tmpl-check { color: var(--success); font-weight: 700; flex-shrink: 0; display: none; }
-        .template-item.selected .tmpl-check { display: inline; }
-
         #reportPanel,
         #reportPanel table,
         #reportPanel th,
@@ -336,15 +324,13 @@
             .report-table thead tr.subhead th { background: #f3f0eb; color: #000; }
             table.report-table tr:hover td { background: #fdfcf9; }
             .toast { background: #3a3a3a; color: #fff; }
-            .template-item { background: #2c2a26; }
-            .template-item:hover { background: #3b3730; }
-            .template-item.selected { background: #4a3f33; box-shadow: inset 0 0 0 2px var(--accent-light); }
             .empty-state { color: var(--text-secondary); }
             .report-table-wrap { border-color: #000; }
             .signature-area .sig-line { border-color: #000; }
         }
 
         .signature-area { display: none; }
+
         @media print {
             .signature-area {
                 display: flex !important;
@@ -355,9 +341,6 @@
             .signature-area .sig-block { width: 45%; }
             .signature-area .sig-line { border-bottom: 1px solid #000; margin: 20px 0 8px; height: 1px; }
             .signature-area .sig-label { font-weight: 600; font-size: 11px; color: #000; }
-        }
-
-        @media print {
             html {
                 -webkit-text-size-adjust: 100%;
                 text-size-adjust: 100%;
@@ -499,9 +482,6 @@
         .print-meta-block { font-size: 0.82rem; line-height: 1.55; max-width: 100%; }
         .print-meta-line { margin: 2px 0; }
         .print-meta-label { font-weight: 700; color: var(--text); }
-
-        @keyframes highlightRow { 0% { background: #fef9e7; } 100% { background: transparent; } }
-        .highlight-flash { animation: highlightRow 1.5s ease-out; }
 
         .collapsible-toggle { cursor: pointer; font-weight: 700; color: var(--primary); user-select: none; }
         .collapsible-toggle .arrow { display: inline-block; transition: transform 0.2s; margin-right: 4px; }
@@ -741,13 +721,6 @@
     // Report room display order (default). Users can still reorder via ↑/↓.
     const REPORT_ROOM_ORDER = ['客廳','廳露台','廳邊房','中間房','主人房','主人浴室','浴室','廚房','工人房','工人廁','工作平台'];
 
-    const NOTE_TEMPLATES = [
-        '全屋空調不在檢查範圍內',
-        '冷氣及其他電器運作不再檢查範圍內',
-        '部份窗為玻璃幕牆設計，部份高位無法檢查',
-        '大門外門鐘底地磚裂，要更換',
-        '浴缸山口不能打開，無法檢查'
-    ];
     /** Step 2「附註」類別：步驟三選項 */
     const NOTE_STEP3_OPTIONS = [
         '全屋空調不在檢查範圍內',
@@ -782,13 +755,6 @@
             '崩、花、污、釘孔明顯，要修補及清潔'
         ],
         '腳線及地磚': [
-            '掃口有孔／罅，要填補',
-            '崩、花、污，要修補及清潔',
-            '地板鬆／響／斜／起級／發黑，要修理、加固或更換',
-            '空鼓，要加固',
-            '地板污，要清潔'
-        ],
-        '腳線及地板': [
             '掃口有孔／罅，要填補',
             '崩、花、污，要修補及清潔',
             '地板鬆／響／斜／起級／發黑，要修理、加固或更換',
@@ -876,15 +842,6 @@
             '崩花／花痕／唧膠有孔／氣泡／不平，建議重修／打磨／重做',
             '部分石崩及有隙，要填補'
         ],
-        '玻璃趟門': [
-            '框膠／唧膠有氣泡、罅、孔／毛條爛／防水膠問題，要重做／更換／修補',
-            '外框積水／披口，要檢查及修理／填補',
-            '門斜／鬆、不貼框及虛位，要重裝及加固',
-            '頂路軌欠膠條／門鉸生鏽，要補裝／清理或更換',
-            '底掃口不平滑／唧膠爛／滲水痕跡，要重做／修補',
-            '門柄鬆／撞框／推拉響／毛條崩口，要加固／修理／更換',
-            '玻璃崩／花／污，要更換／重磨／清潔'
-        ],
         '趟門和窗': [
             '趟門框膠／唧膠有氣泡、罅、孔／毛條爛／防水膠問題，要重做／更換／修補',
             '趟門外框積水／披口，要檢查及修理／填補',
@@ -958,13 +915,12 @@
             '晾衫架／螺絲生鏽，要更換',
             '滅火筒過期，要更換'
         ],
-        '附註': NOTE_STEP3_OPTIONS.slice(),
-        '備注': NOTE_STEP3_OPTIONS.slice()
+        '附註': NOTE_STEP3_OPTIONS.slice()
     };
 
     const TEMPLATE_LOOKUP_ALIASES = {
         '腳線及地板': '腳線及地磚', '批蕩': '批盪', '橱櫃': '厨櫃', '櫥櫃': '厨櫃',
-        '趟門及窗': '趟門和窗'
+        '趟門及窗': '趟門和窗', '玻璃趟門': '趟門和窗', '備注': '附註'
     };
 
     /** Step 2 類別：步驟三／四選項篩選（依 UI 編號對應之文案） */
@@ -1381,19 +1337,13 @@
             if (paintDesc && !roomSkipsPaintDefault(room) && roomHasCategory(room, '油漆') && pushDefaultDefect(room, '油漆', paintDesc, existing, nextIdRef)) added++;
         });
 
-        const livingRoom = rooms.find(r => r.name === LIVING_ROOM_NAME);
-        if (livingRoom) {
+        [LIVING_ROOM_NAME, LIVING_KITCHEN_ROOM_NAME].forEach(roomName => {
+            const room = rooms.find(r => r.name === roomName);
+            if (!room) return;
             NOTE_STEP3_OPTIONS.forEach(desc => {
-                if (pushDefaultDefect(livingRoom, '附註', desc, existing, nextIdRef)) added++;
+                if (pushDefaultDefect(room, '附註', desc, existing, nextIdRef)) added++;
             });
-        }
-
-        const livingKitchen = rooms.find(r => r.name === LIVING_KITCHEN_ROOM_NAME);
-        if (livingKitchen) {
-            NOTE_STEP3_OPTIONS.forEach(desc => {
-                if (pushDefaultDefect(livingKitchen, '附註', desc, existing, nextIdRef)) added++;
-            });
-        }
+        });
 
         if (added) {
             ensureDefectReportOrders();
@@ -1603,7 +1553,6 @@
     function resolveRoomCategory(room, rawCat) {
         if (['備注', '備註'].includes(rawCat)) return '附註';
         if (rawCat === '附註') return '附註';
-        if (rawCat === '玻璃趟門') rawCat = '趟門和窗';
         if (rawCat === '趟門和窗' || rawCat === '趟門及窗') {
             return room.name === LIVING_ROOM_NAME ? WINDOW_CAT_LIVING : WINDOW_CAT_OTHER;
         }
@@ -1665,7 +1614,7 @@
     function getFullTemplateArray(cat) {
         if (!cat) return [];
         const key = TEMPLATE_LOOKUP_ALIASES[cat] || cat;
-        if (key === '附註' || cat === '附註') return categoryTemplates['附註'] ? categoryTemplates['附註'].slice() : NOTE_STEP3_OPTIONS.slice();
+        if (key === '附註') return categoryTemplates['附註'].slice();
         const globalSuffix = (key === '批盪' || cat === '批盪') ? GLOBAL_DEFECT_TEMPLATES : [];
         if (categoryTemplates[key]) return categoryTemplates[key].concat(globalSuffix);
         if (categoryTemplates[cat]) return categoryTemplates[cat].concat(globalSuffix);
@@ -1921,17 +1870,14 @@
                     roomName: d.roomName,
                     categoryName: d.categoryName,
                     items: [],
-                    ids: [],
                     placeholder: false
                 });
             }
-            const g = map.get(k);
-            g.items.push({
+            map.get(k).items.push({
                 id: d.id,
                 description: d.description,
                 remarks: d.remarks
             });
-            g.ids.push(d.id);
         });
         map.forEach(g => {
             g.items.sort((a, b) => {
@@ -1960,7 +1906,6 @@
                     remarks: '',
                     placeholder: true
                 }],
-                ids: [],
                 placeholder: true
             });
         });
@@ -2177,7 +2122,6 @@
         $reportTable.querySelectorAll('tbody').forEach(tb => tb.remove());
         if (!rooms.length && !defects.length) {
             const emptyBody = document.createElement('tbody');
-            emptyBody.id = 'reportBody';
             emptyBody.innerHTML = `<tr class="empty-state"><td colspan="${colspan}">📭 尚未添加任何缺陷項目 No defects added yet</td></tr>`;
             $reportTable.appendChild(emptyBody);
             $defectCount.textContent = '0 項 / 0 items';
@@ -2190,7 +2134,6 @@
             rooms.length + ' rooms · ' + defects.length + ' items · ' + roomIdsInReport.size + ' in report';
         if (!groups.length) {
             const emptyBody = document.createElement('tbody');
-            emptyBody.id = 'reportBody';
             emptyBody.innerHTML = `<tr class="empty-state"><td colspan="${colspan}">📭 尚未添加任何缺陷項目 No defects added yet</td></tr>`;
             $reportTable.appendChild(emptyBody);
             return;
