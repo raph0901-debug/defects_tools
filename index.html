@@ -391,8 +391,16 @@
                 break-inside: auto;
                 page-break-inside: auto;
             }
-            table.report-table tr.report-placeholder-row,
-            table.report-table tr.report-room-spacer-row { display: none !important; }
+            table.report-table tr.report-placeholder-row { display: none !important; }
+            table.report-table tr.report-room-spacer-row td {
+                height: 10px;
+                padding: 0;
+                border-left: 1px solid #000 !important;
+                border-right: 1px solid #000 !important;
+                border-top: none !important;
+                border-bottom: none !important;
+                background: #fff;
+            }
             table.report-table tr.report-defect-row,
             table.report-table tr.report-room-header-row,
             table.report-table tr.report-cat-continuation-row {
@@ -971,6 +979,8 @@
     let selectedSuggestionTemplates = [];
     let selectedRemarkPresets = [];
     let editGroupIds = null;
+    let seededRoomIds = new Set();
+    let suppressedDefaultKeys = new Set();
 
     const OPT_NO_MANDATORY = '暫沒有必收項目';
 
@@ -1012,7 +1022,9 @@
             endorsedBy: $endorsedBySelect.value,
             workflowVersion: WORKFLOW_VERSION,
             rooms,
-            defects
+            defects,
+            seededRoomIds: [...seededRoomIds],
+            suppressedDefaultKeys: [...suppressedDefaultKeys]
         };
     }
 
@@ -1044,7 +1056,9 @@
             ensureRoomReportOrders();
         }
         if (Array.isArray(data.defects)) defects = data.defects;
-        if (rooms.length) seedProjectDefaultDefects();
+        seededRoomIds = new Set(Array.isArray(data.seededRoomIds) ? data.seededRoomIds.map(String) : []);
+        suppressedDefaultKeys = new Set(Array.isArray(data.suppressedDefaultKeys) ? data.suppressedDefaultKeys : []);
+        inferSeededRoomsFromDefects();
         if (typeof data.addr === 'string') $addrInput.value = data.addr;
         if (typeof data.client === 'string') $clientInput.value = data.client;
         if (typeof data.date === 'string') $dateInput.value = data.date;
@@ -1176,7 +1190,7 @@
     window.goToEntryTab = function() {
         if (!selectedRoomId && rooms.length) selectedRoomId = rooms[0].id;
         if (!selectedRoomId) { showToast('⚠️ 請先在 Step 1 加入房間'); return; }
-        seedProjectDefaultDefects();
+        seedProjectDefaultDefects({ onlyUnseededRooms: true });
         renderAll();
         switchWorkflowTab('entry');
     };
@@ -1308,9 +1322,23 @@
         return roomId + '|' + categoryName + '|' + String(description || '').trim();
     }
 
+    function inferSeededRoomsFromDefects() {
+        rooms.forEach(room => {
+            const key = normalizeRoomId(room.id);
+            if (seededRoomIds.has(key)) return;
+            if (defects.some(d => sameReportRoom(d.roomId, room.id))) seededRoomIds.add(key);
+        });
+    }
+
+    function suppressDefaultDefects(defectList) {
+        defectList.forEach(d => {
+            suppressedDefaultKeys.add(defaultDefectKey(d.roomId, d.categoryName, d.description));
+        });
+    }
+
     function pushDefaultDefect(room, categoryName, description, existing, nextIdRef) {
         const key = defaultDefectKey(room.id, categoryName, description);
-        if (existing.has(key)) return false;
+        if (existing.has(key) || suppressedDefaultKeys.has(key)) return false;
         defects.push({
             id: nextIdRef.value++,
             roomId: room.id,
@@ -1324,25 +1352,33 @@
         return true;
     }
 
-    function seedProjectDefaultDefects() {
+    function seedProjectDefaultDefects(options) {
+        const onlyUnseededRooms = options && options.onlyUnseededRooms;
+        const roomIdFilter = options && options.roomIds ? new Set(options.roomIds.map(id => normalizeRoomId(id))) : null;
         const existing = new Set(defects.map(d => defaultDefectKey(d.roomId, d.categoryName, d.description)));
         let added = 0;
         const nextIdRef = { value: Date.now() };
         const paintDesc = buildPaintDefaultDescription();
 
+        function shouldSeedRoom(room) {
+            const key = normalizeRoomId(room.id);
+            if (roomIdFilter && !roomIdFilter.has(key)) return false;
+            if (onlyUnseededRooms && seededRoomIds.has(key)) return false;
+            return true;
+        }
+
         rooms.forEach(room => {
+            if (!shouldSeedRoom(room)) return;
             if (roomHasCategory(room, '批盪') && pushDefaultDefect(room, '批盪', OPT_NO_MANDATORY, existing, nextIdRef)) added++;
             const doorCat = getDoorCategoryForRoom(room);
             if (doorCat && pushDefaultDefect(room, doorCat, DOOR_DEFAULT_DESC, existing, nextIdRef)) added++;
             if (paintDesc && !roomSkipsPaintDefault(room) && roomHasCategory(room, '油漆') && pushDefaultDefect(room, '油漆', paintDesc, existing, nextIdRef)) added++;
-        });
-
-        [LIVING_ROOM_NAME, LIVING_KITCHEN_ROOM_NAME].forEach(roomName => {
-            const room = rooms.find(r => r.name === roomName);
-            if (!room) return;
-            NOTE_STEP3_OPTIONS.forEach(desc => {
-                if (pushDefaultDefect(room, '附註', desc, existing, nextIdRef)) added++;
-            });
+            if (room.name === LIVING_ROOM_NAME || room.name === LIVING_KITCHEN_ROOM_NAME) {
+                NOTE_STEP3_OPTIONS.forEach(desc => {
+                    if (pushDefaultDefect(room, '附註', desc, existing, nextIdRef)) added++;
+                });
+            }
+            seededRoomIds.add(normalizeRoomId(room.id));
         });
 
         if (added) {
@@ -1450,15 +1486,17 @@
             .filter(Boolean)
             .filter(r => !rooms.some(existing => existing.id === r.id));
         if (!addRooms.length) { showToast('⚠️ 請先選擇未加入的房間'); return; }
+        const newRoomIds = [];
         addRooms.forEach((r, i) => {
             const copy = JSON.parse(JSON.stringify(r));
             copy.reportOrder = rooms.length + i;
             rooms.push(copy);
+            newRoomIds.push(copy.id);
         });
         ensureRoomReportOrders();
         if (!selectedRoomId) selectedRoomId = rooms[0].id;
         pendingRoomIds = [];
-        seedProjectDefaultDefects();
+        seedProjectDefaultDefects({ roomIds: newRoomIds });
         renderAll();
         saveToLocal();
         showToast('✅ 已加入房間');
@@ -2144,7 +2182,6 @@
         let roomTbody = null;
         rows.forEach(row => {
             if (row.type === 'spacer') {
-                if (forPrint) return;
                 const tr = document.createElement('tr');
                 tr.className = 'report-room-spacer-row';
                 for (let i = 0; i < colspan; i++) {
@@ -2317,6 +2354,7 @@
     window.deleteDefectGroup = function(ids) {
         const idArr = ids.split(',').map(Number);
         if (!confirm(`確定刪除這 ${idArr.length} 項缺陷？`)) return;
+        suppressDefaultDefects(defects.filter(d => idArr.includes(d.id)));
         defects = defects.filter(d => !idArr.includes(d.id));
         renderReportTable(); saveToLocal(); showToast('🗑️ 已刪除');
     };
@@ -2324,7 +2362,10 @@
     window.clearAllDefects = function() {
         if (!defects.length) return;
         if (!confirm('確定清空全部記錄？')) return;
-        defects = []; renderReportTable(); saveToLocal(); showToast('🗑️ 已清空');
+        defects = [];
+        seededRoomIds.clear();
+        suppressedDefaultKeys.clear();
+        renderReportTable(); saveToLocal(); showToast('🗑️ 已清空');
     };
 
     /** 列印用日期格式（與常用報告 PDF 一致：d/m/yyyy） */
